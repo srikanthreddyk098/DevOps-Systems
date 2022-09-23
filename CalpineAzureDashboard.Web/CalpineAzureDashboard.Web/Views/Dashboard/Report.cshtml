@@ -1,0 +1,162 @@
+﻿@model ReportViewModel
+@{
+    ViewBag.Title = Model.Report.Name;
+}
+
+@section Breadcrumbs {
+    <ol class="breadcrumb navbar-breadcrumb">
+        <li>@Model.Report.Name</li>
+        <li class="active" id="page-name"></li>
+    </ol>
+}
+<div id ="reportContainer" style = "height:95vh; height:calc(100vh - 43px)"></div>
+
+<script src="~/scripts/powerbi.js"></script>
+<script src="~/scripts/jquery-3.1.1.js"></script>
+<script>
+    // Gets embed token for report
+    var getEmbedToken = function(groupId, reportId, datasetId) {
+        return $.ajax({
+            type: 'POST',
+            data: { groupId: groupId, reportId: reportId, datasetId: datasetId },
+            url: '/dashboard/GetToken',
+            dataType: 'json'
+        });
+    }
+
+    var getReport = function(groupId, reportId, datasetId, embedUrl) {
+        // Generate embed token
+        getEmbedToken(groupId, reportId, datasetId)
+            .then(function (token) {
+                // Embed configuration used to describe the what and how to embed.
+                // This object is used when calling powerbi.embed.
+                // This also includes settings and options such as filters.
+                // You can find more information at https://github.com/Microsoft/PowerBI-JavaScript/wiki/Embed-Configuration-Details.
+                var models = window['powerbi-client'].models;
+                var config = {
+                    type: 'report',
+                    tokenType: models.TokenType.Embed,
+                    accessToken: token.token,
+                    embedUrl: embedUrl,
+                    id: reportId,
+                    permissions: models.Permissions.View,
+                    settings: {
+                        filterPaneEnabled: true,
+                        navContentPaneEnabled: true,
+                        hideErrors: true,
+                        persistentFiltersEnabled: true
+                    }
+                };
+
+                // Get a reference to the embedded report HTML element
+                var reportContainer = $('#reportContainer')[0];
+
+                // Embed the report and display it within the div container.
+                var report = powerbi.embed(reportContainer, config);
+
+                // Update the navbar breadcrumb when the report changes pages
+                var pageName = document.getElementById('page-name');
+                report.on('pageChanged',
+                    function(e) {
+                        pageName.innerText = e.detail.newPage.displayName;
+                });
+        
+                // Report.off removes a given event handler if it exists.        
+                report.off("loaded");
+
+                // Report.on will add an event handler which prints to Log window.
+                report.on("loaded", function() {
+                    // Set token expiration listener
+                    setTokenExpirationListener(groupId, reportId, datasetId, token.expiration, 2);
+                });
+            });
+    }
+
+    // Get a reference to the embedded report.
+    //report = powerbi.get(reportContainer);
+
+    function setTokenExpirationListener(groupId, reportId, datasetId, tokenExpiration, minutesToRefresh = 2) {
+        // get current time
+        var currentTime = Date.now();
+        var expiration = tokenExpiration;
+        var safetyInterval = minutesToRefresh * 60 * 1000;
+
+        // time until token refresh in milliseconds
+        var timeout = expiration - currentTime - safetyInterval;
+
+        // if token already expired, generate new token and set the access token
+        if (timeout<=0) {
+            //console.log("Updating Report Embed Token");
+            updateToken(reportId, groupId);
+        }
+        // set timeout so minutesToRefresh minutes before token expires, token will be updated
+        else {
+            //console.log("Report Embed Token will be updated in " + timeout + " milliseconds.");
+            setTimeout(function() {
+                updateToken(groupId, reportId, datasetId);
+            }, timeout);
+        }
+    }
+
+    function updateToken(groupId, reportId, datasetId) {
+        getEmbedToken(groupId, reportId, datasetId)
+            .then(function(token) {
+                 // Get a reference to the embedded report HTML element
+                 var reportContainer = $('#reportContainer')[0];
+
+                 // Embed the report and display it within the div container.
+                 var report = powerbi.get(reportContainer);
+
+                // Set AccessToken
+                report.setAccessToken(token.token)
+                    .then(function() {
+                        // Set token expiration listener
+                        // result.expiration is in ISO format
+                        setTokenExpirationListener(groupId, reportId, datasetId, token.expiration, 2);
+                    });
+            });
+    }
+    
+    var groupId = "@Model.GroupId";
+    var reportId = "@Model.Report.Id";
+    var datasetId = "@Model.Report.DatasetId";
+    var embedUrl = "@Html.Raw(Model.Report.EmbedUrl)";
+    getReport(groupId, reportId, datasetId, embedUrl);
+
+    //// Report.off removes a given event handler if it exists.
+    //report.off("error");
+
+    //// Report.on will add an event handler that handles errors.
+    //report.on("error", function(event) {
+    //    var error = event.detail;
+
+    //    // If error is not Fatal log the error and continue
+    //    //if(error.level !== models.TraceType.Fatal) {
+    //    //    Log.log(error);
+    //    //    return;
+    //    //}
+
+    //    // if the error is TokenExpired refresh the token
+    //    // else, show error dialog
+    //    if(error.message === models.CommonErrorCode.TokenExpired) {
+    //        // refresh token
+    //        // this function is not implemented as part of this solution
+    //        // you can implement your own function here
+    //        var newAccessToken = refreshToken();
+		
+    //        // Get a reference to the embedded report HTML element
+    //        var embedContainer = $('#embedContainer')[0];
+		
+    //        // Get a reference to the embedded report.
+    //        var report = powerbi.get(embedContainer);
+		
+    //        // Set new access token
+    //        report.setAccessToken(newAccessToken);
+    //    } else {
+    //        // show error dialog with detailed message from error over the iframe
+    //        // this function is not implemented as part of this solution
+    //        // you can implement your own function here
+    //        showError(error.detailedMessage);
+    //    }
+    //});
+</script>

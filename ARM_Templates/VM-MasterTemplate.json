@@ -1,0 +1,558 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vmNameList": {
+            "type": "string",
+            "minLength": 6,
+            "metadata": {
+                "description": "Name of the VM(s) to deploy. To deploy more than one VM, enter the names of the VMs in a comma-delimited list (e.g VM01,VM02,VM03). Note: When specifying multiple VMs, they will all be created with the same configuration specified in this template (i.e. the same vnet, tags, sizes, etc)."
+            }
+        },
+        "vmSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2s_v3",
+            "allowedValues": [
+                "Standard_D2s_v3",
+                "Standard_D4S_v3",
+                "Standard_D8S_v3",
+                "Standard_E2S_v3",
+                "Standard_E4S_v3",
+                "Standard_E8S_v3",
+                "Standard_E16S_v3"
+            ],
+            "metadata": {
+              "description": "The SKU of the VM size to create. Contact DevOps to add more values."
+            }
+        },
+        "timezone": {
+            "type": "string",
+            "defaultValue": "CST",
+            "allowedValues": [
+                "PST",
+                "CST",
+                "EST"
+            ],
+            "metadata": {
+                "description": "The timezone to set the VM to."
+            }
+        },
+        "locationPriority": {
+            "type": "string",
+            "defaultValue": "Primary",
+            "allowedValues": [
+                "Primary",
+                "Secondary"
+            ],
+            "metadata": {
+                "description": "Determines whether or not the server is in a primary or secondary location. This is used for determining the AD OU to join the VM to."
+            }
+        },
+        "os": {
+            "type": "string",
+            "defaultValue": "Windows",
+            "allowedValues": [
+                "Windows",
+                "Linux"
+            ],
+            "metadata": {
+                "description": "The OS that will be deployed (Windows or Linux). This will determine what scripts need to be run."
+            }
+        },
+        "imageToDeploy": {
+            "type": "string",
+            "defaultValue": "MicrosoftWindowsServer_WindowsServer_2019-datacenter-gensecond",
+            "allowedValues": [
+                "MicrosoftWindowsServer_WindowsServer_2019-datacenter-gensecond",
+                "MicrosoftWindowsServer_WindowsServer_2019-datacenter-core-g2",
+                "MicrosoftWindowsServer_WindowsServer_2016-datacenter-gensecond",
+                "MicrosoftWindowsServer_WindowsServer_2012-r2-datacenter-gensecond",
+                "Canonical_0001-com-ubuntu-pro-focal_pro-20_04-lts",
+                "Canonical_UbuntuServer_18.04-LTS",
+                "Canonical_UbuntuServer_16.04-LTS",
+                "Canonical_UbuntuServer_14.04.4-LTS",
+                "Redhat_Rhel-byos_Rhel-raw76",
+                "Redhat_Rhel-byos_Rhel-raw75",
+                "Redhat_Rhel-byos_Rhel-raw69"
+            ],
+            "metadata": {
+              "description": "The marketplace image to deploy. This is a concatenation of the image publisher, offer, and sku (separated by an underscore). Contact DevOps to add more values."
+            }
+        },
+        "imageVersion": {
+          "type": "string",
+          "defaultValue": "latest",
+          "metadata": {
+            "description": "The OS image version."
+          }
+        },
+        "redhatSubscriptionPool": {
+            "type": "string",
+            "defaultValue": "N/A",
+            "metadata": {
+              "description": "The redhat subscription pool to attach to. This value should not be empty."
+            }
+        },
+        "osDiskSizeInGb": {
+            "type": "string",
+            "defaultValue": "128",
+            "metadata": {
+                "description": "The size of the OS disk in GB."
+            }
+        },
+        "storageAccountType": {
+            "type": "string",
+            "defaultValue": "StandardSSD_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "StandardSSD_LRS",
+                "Premium_LRS"
+            ],
+            "metadata": {
+                "description": "The storage account type to use (Standard HDD, Standard SSD, or Premium SSD)."
+            }
+        },
+        "tagApplicationName": {
+            "type": "string",
+            "metadata": {
+                "description": "The value for the the Application_Name tag."
+            }
+        },
+        "tagApplicationOwner": {
+            "type": "string",
+            "metadata": {
+                "description": "The value for the the Application_Owner tag."
+            }
+        },
+        "tagServerType": {
+            "type": "string",
+            "metadata": {
+                "description": "The value for the Server_Type tag."
+            }
+        },
+        "tagSnowRequest": {
+            "type": "string",
+            "metadata": {
+                "description": "The value to assign to the SNOW_Request tag."
+            }
+        },
+        "virtualNetworkResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the resource group containing the virtual network to join the VM to."
+            }
+        },
+        "virtualNetworkName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the virtual network to deploy to. This virtual network MUST exist in the virtual network resource group specified above."
+            }
+        },
+        "subnetName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the subnet to deploy the network interface to. This subnet MUST exist in the virtual network specified above."
+            }
+        },
+        "enableAcceleratedNetworking": {
+            "type": "string",
+            "defaultValue": "false",
+            "allowedValues": [
+                "true",
+                "false"
+            ],
+            "metadata": {
+              "description": "Set to true to enable accelerated networking."
+            }
+        },
+        "privateIpAllocationMethod": {
+            "type": "string",
+            "defaultValue": "Static",
+            "allowedValues": [
+                "Static",
+                "Dynamic"
+            ],
+            "metadata": {
+                "description": "Specifies whether the private IP should be dynamic or static."
+            }
+        },
+        "runPostDeployScripts": {
+            "type": "string",
+            "defaultValue": "Yes",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Yes/No value to determine whether or not to run post deploy scripts to configure agents, etc."
+            }
+        },
+        "joinToDomain": {
+            "type": "string",
+            "defaultValue": "Yes",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Yes/No value to determine whether or not to join the virtual machine to the CALPINENA domain."
+            }
+        },
+        "domainToJoinTo": {
+            "type": "string",
+            "allowedValues": [
+                "na.calpine.com",
+                "calpinesolutions.com"
+            ],
+            "metadata": {
+                "description": "The domain to join to (if applicable)."
+            }
+        },
+        "useTestTemplates": {
+            "type": "string",
+            "defaultValue": "No",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Yes/No value to determine whether or not to use the test templates or the 'production' templates."
+            }
+        }
+    },
+    "variables": {
+        "vmListArray": "[split(parameters('vmNameList'),',')]",
+        "imagePublisher": "[split(parameters('imageToDeploy'),'_')[0]]",
+        "imageOffer": "[split(parameters('imageToDeploy'),'_')[1]]",
+        "imageSku": "[split(parameters('imageToDeploy'),'_')[2]]",
+        "armTemplatesBaseUrl": "[if(equals(parameters('useTestTemplates'),'Yes'),'https://cpndeploy.blob.core.windows.net/arm-templates/test','https://cpndeploy.blob.core.windows.net/arm-templates/')]",
+        "keyVaultId": "/subscriptions/d4836ef9-5c8b-4966-bd59-434828af78e6/resourceGroups/PZ_RG_SS_PROD_DEVOPS_01/providers/Microsoft.KeyVault/vaults/cpn-devops",
+        "ouSubscriptionName": "[concat('Sub_',replace(replace(subscription().displayName,'/',''),' ',''))]",
+        "ouPath": "[concat(if(equals(parameters('os'),'Linux'),'OU=LinuxServers,',''),'OU=',variables('ouSubscriptionName'),',OU=',parameters('locationPriority'),',OU=Azure,OU=Servers,DC=na,DC=calpine,DC=com')]",
+        "domainJoinOptions": 3
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-05-01",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[equals(parameters('os'),'Windows')]",
+            "name": "[concat(variables('vmListArray')[copyIndex()],'-WindowsVm-',copyIndex())]",
+            "copy": {
+                "name": "windowsVmCopy",
+                "count": "[length(variables('vmListArray'))]"
+            },
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('armTemplatesBaseUrl'),'VM-Windows.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "vmName": {
+                        "value": "[variables('vmListArray')[copyIndex()]]"
+                    },
+                    "vmSize": {
+                        "value": "[parameters('vmSize')]"
+                    },
+                    "timezone": {
+                        "value": "[parameters('timezone')]"
+                    },
+                    "imagePublisher": {
+                        "value": "[variables('imagePublisher')]"
+                    },
+                    "imageOffer": {
+                        "value": "[variables('imageOffer')]"
+                    },
+                    "imageSku": {
+                        "value": "[variables('imageSku')]"
+                    },
+                    "imageVersion": {
+                        "value": "[parameters('imageVersion')]"
+                    },
+                    "osDiskSizeInGb": {
+                        "value": "[parameters('osDiskSizeInGb')]"
+                    },
+                    "storageAccountType": {
+                        "value": "[parameters('storageAccountType')]"
+                    },
+                    "localAdminUsername": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "[variables('keyVaultId')]"
+                            },
+                            "secretName": "LocalAdminUsername"
+                        }
+                    },
+                    "localAdminPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "[variables('keyVaultId')]"
+                            },
+                            "secretName": "LocalAdminPassword"
+                        }
+                    },
+                    "tagApplicationName": {
+                        "value": "[parameters('tagApplicationName')]"
+                    },
+                    "tagApplicationOwner": {
+                        "value": "[parameters('tagApplicationOwner')]"
+                    },
+                    "tagServerType": {
+                        "value": "[parameters('tagServerType')]"
+                    },
+                    "tagSnowRequest": {
+                        "value": "[parameters('tagSnowRequest')]"
+                    },
+                    "virtualNetworkResourceGroup": {
+                        "value": "[parameters('virtualNetworkResourceGroup')]"
+                    },
+                    "virtualNetworkName": {
+                        "value": "[parameters('virtualNetworkName')]"
+                    },
+                    "subnetName": {
+                        "value": "[parameters('subnetName')]"
+                    },
+                    "enableAcceleratedNetworking": {
+                        "value": "[parameters('enableAcceleratedNetworking')]"
+                    },
+                    "privateIpAllocationMethod": {
+                        "value": "[parameters('privateIpAllocationMethod')]"
+                    },
+                    "useTestTemplates": {
+                        "value": "[parameters('useTestTemplates')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-05-01",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[and(equals(parameters('runPostDeployScripts'),'Yes'),equals(parameters('os'),'Windows'))]",
+            "name": "[concat(variables('vmListArray')[copyIndex()],'-WindowsPostDeployExtension-',copyIndex())]",
+            "copy": {
+                "name": "windowsPostDeployExtensionCopy",
+                "count": "[length(variables('vmListArray'))]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Resources/deployments/',variables('vmListArray')[copyIndex()],'-WindowsVm-',copyIndex())]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('armTemplatesBaseUrl'),'VM-WindowsPostDeployExtension.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "subscription": {
+                        "value": "[subscription().displayName]"
+                    },
+                    "timezone": {
+                        "value": "[parameters('timezone')]"
+                    },
+                    "vmName": {
+                        "value": "[variables('vmListArray')[copyIndex()]]"
+                    },
+                    "domainToJoinTo": {
+                        "value": "[parameters('domainToJoinTo')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-05-01",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[and(equals(parameters('joinToDomain'),'Yes'),equals(parameters('os'),'Windows'))]",
+            "name": "[concat(variables('vmListArray')[copyIndex()],'-WindowsDomainJoin-',copyIndex())]",
+            "copy": {
+                "name": "windowsDomainJoinCopy",
+                "count": "[length(variables('vmListArray'))]"
+            },
+            "dependsOn": [
+              "[if(equals(parameters('runPostDeployScripts'),'Yes'),concat('Microsoft.Resources/deployments/',variables('vmListArray')[copyIndex()],'-WindowsPostDeployExtension-',copyIndex()),concat('Microsoft.Resources/deployments/',variables('vmListArray')[copyIndex()],'-WindowsVm-',copyIndex()))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('armTemplatesBaseUrl'),'VM-WindowsDomainJoinExtension.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "vmName": { 
+                        "value": "[variables('vmListArray')[copyIndex()]]"
+                    },
+                    "domainJoinUserName": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "[variables('keyVaultId')]"
+                            },
+                            "secretName": "[if(equals(parameters('domainToJoinTo'),'calpinesolutions.com'),'SolutionsDomainJoinUserName','DomainJoinUserName')]"
+                        }
+                    },
+                    "domainJoinUserPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "[variables('keyVaultId')]"
+                            },
+                            "secretName": "[if(equals(parameters('domainToJoinTo'),'calpinesolutions.com'),'SolutionsDomainJoinUserPassword','DomainJoinUserPassword')]"
+                        }
+                    },
+                    "domainFQDN": {
+                        "value": "[parameters('domainToJoinTo')]"
+                    },
+                    "ouPath": {
+                        "value": "[if(equals(parameters('domainToJoinTo'),'calpinesolutions.com'),'OU=CCA,OU=Servers,OU=Azure,DC=calpinesolutions,DC=com',variables('ouPath'))]"
+                    },
+                    "domainJoinOptions": {
+                        "value": "[variables('domainJoinOptions')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-05-01",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[equals(parameters('os'),'Linux')]",
+            "name": "[concat(variables('vmListArray')[copyIndex()],'-Linux-',copyIndex())]",
+            "copy": {
+                "name": "linuxVmCopy",
+                "count": "[length(variables('vmListArray'))]"
+            },
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('armTemplatesBaseUrl'),if(equals(variables('imagePublisher'),'Redhat'),'VM-Redhat.json','VM-Linux.json'))]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "vmName": {
+                        "value": "[variables('vmListArray')[copyIndex()]]"
+                    },
+                    "vmSize": {
+                        "value": "[parameters('vmSize')]"
+                    },
+                    "timezone": {
+                        "value": "[parameters('timezone')]"
+                    },
+                    "imagePublisher": {
+                        "value": "[variables('imagePublisher')]"
+                    },
+                    "imageOffer": {
+                        "value": "[variables('imageOffer')]"
+                    },
+                    "imageSku": {
+                        "value": "[variables('imageSku')]"
+                    },
+                    "osDiskSizeInGb": {
+                        "value": "[parameters('osDiskSizeInGb')]"
+                    },
+                    "storageAccountType": {
+                        "value": "[parameters('storageAccountType')]"
+                    },
+                    "localAdminUsername": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "[variables('keyVaultId')]"
+                            },
+                            "secretName": "LocalAdminUsername"
+                        }
+                    },
+                    "localAdminPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "[variables('keyVaultId')]"
+                            },
+                            "secretName": "LocalAdminPassword"
+                        }
+                    },
+                    "tagApplicationName": {
+                        "value": "[parameters('tagApplicationName')]"
+                    },
+                    "tagApplicationOwner": {
+                        "value": "[parameters('tagApplicationOwner')]"
+                    },
+                    "tagServerType": {
+                        "value": "[parameters('tagServerType')]"
+                    },
+                    "tagSnowRequest": {
+                        "value": "[parameters('tagSnowRequest')]"
+                    },
+                    "virtualNetworkResourceGroup": {
+                        "value": "[parameters('virtualNetworkResourceGroup')]"
+                    },
+                    "virtualNetworkName": {
+                        "value": "[parameters('virtualNetworkName')]"
+                    },
+                    "subnetName": {
+                        "value": "[parameters('subnetName')]"
+                    },
+                    "enableAcceleratedNetworking": {
+                        "value": "[parameters('enableAcceleratedNetworking')]"
+                    },
+                    "privateIpAllocationMethod": {
+                        "value": "[parameters('privateIpAllocationMethod')]"
+                    },
+                    "useTestTemplates": {
+                        "value": "[parameters('useTestTemplates')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-05-01",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[and(equals(parameters('runPostDeployScripts'),'Yes'),equals(parameters('os'),'Linux'))]",
+            "name": "[concat(variables('vmListArray')[copyIndex()],'-LinuxPostDeployExtension-',copyIndex())]",
+            "copy": {
+                "name": "linuxPostDeployExtensionCopy",
+                "count": "[length(variables('vmListArray'))]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Resources/deployments/',variables('vmListArray')[copyIndex()],'-Linux-',copyIndex())]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('armTemplatesBaseUrl'),'VM-LinuxPostDeployExtension.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "subscription": {
+                        "value": "subscription().displayName"
+                    },
+                    "timezone": {
+                        "value": "[parameters('timezone')]"
+                    },
+                    "vmName": {
+                        "value": "[variables('vmListArray')[copyIndex()]]"
+                    },
+                    "joinToDomain": {
+                        "value": "[parameters('joinToDomain')]"
+                    },
+                    "redhatPortalPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "[variables('keyVaultId')]"
+                            },
+                            "secretName": "RedhatPortalPassword"
+                        }
+                    },
+                    "redhatSubscriptionPool": {
+                        "value": "[parameters('redhatSubscriptionPool')]"
+                    },
+                    "domainJoinPassword": {
+                        "reference": {
+                            "keyVault": {
+                                "id": "[variables('keyVaultId')]"
+                            },
+                            "secretName": "DomainJoinUserPasswordEscaped"
+                        }
+                    },
+                    "formattedSubscriptionName": {
+                        "value": "[variables('ouSubscriptionName')]"
+                    }
+                }
+            }
+        }
+    ],
+  "outputs": {}
+}

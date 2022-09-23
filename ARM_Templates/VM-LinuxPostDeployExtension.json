@@ -1,0 +1,86 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "subscription": {
+            "type": "string",
+            "metadata": {
+                "description": "The Azure subscription the VM is deployed to."
+            }
+        },
+        "timezone": {
+            "type": "string",
+            "metadata": {
+                "description": "The timezone to set the VM to."
+            }
+        },
+        "vmName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the VM to run the post-deployment script."
+            }
+        },
+        "joinToDomain": {
+            "type": "string",
+            "defaultValue": "Yes",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Yes/No value to determine whether or not to join the virtual machine to the CALPINENA domain.."
+            }
+        },
+        "redhatPortalPassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Password for the redhat subscription manager."
+            }
+        },
+        "redhatSubscriptionPool": {
+            "type": "string",
+            "metadata": {
+                "description": "The redhat subscription pool to attach to."
+            }
+        },
+        "domainJoinPassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Password for the domain join account."
+            }          
+        },
+        "formattedSubscriptionName": {
+            "type": "string",
+            "metadata": {
+                "description": "The subscription name without spaces or slashes."
+            }
+        }
+    },
+    "variables": {
+        "postDeploymentScriptName": "Linux-SetupScript.sh",
+        "postDeploymentScriptUrl": "[concat('http://download.calpine.com/devops/scripts/',variables('postDeploymentScriptName'))]",
+        "postDeploymentScriptCommand": "[if(equals(parameters('joinToDomain'),'Yes'),concat('./',variables('postDeploymentScriptName'),' ''',parameters('subscription'),''' ',parameters('timezone'),' ',parameters('redhatPortalPassword'),' ',parameters('redhatSubscriptionPool'),' ',parameters('domainJoinPassword'),' ',parameters('formattedSubscriptionName')),concat('./',variables('postDeploymentScriptName'),' ''',parameters('subscription'),''' ',parameters('redhatPortalPassword')))]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(parameters('vmName'),'/',variables('postDeploymentScriptName'))]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                },
+                "protectedSettings": {
+                  "commandToExecute": "[variables('postDeploymentScriptCommand')]",
+                  "fileUris": [
+                      "[variables('postDeploymentScriptUrl')]"
+                    ]
+                }
+            }
+        }
+    ]
+}

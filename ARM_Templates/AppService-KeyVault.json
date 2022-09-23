@@ -1,0 +1,107 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+        "keyVaultName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the key vault."
+            }
+        },
+        "location": {
+          "type": "string",
+          "defaultValue": "[resourceGroup().location]",
+          "metadata": {
+            "description": "The location in which the resources should be deployed."
+          }
+        },
+        "virtualNetworkId": {
+            "type": "string",
+            "metadata": {
+                "description": "The network id of the app service."
+            }
+        },
+        "identityObjectId": {
+            "type": "string",
+            "metadata": {
+                "description": "The identity object id to grant get,list permissions to."
+            }
+        },
+        "applicationNameTag": {
+            "type": "string",
+            "metadata": {
+                "description": "The value to assign to the Application_Name tag."
+            }
+        },
+        "snowRequestTag": {
+            "type": "string",
+            "metadata": {
+                "description": "The value to assign to the SNOW_Request tag."
+            }
+        },
+        "armTemplateBaseUrl": {
+            "type": "string",
+            "defaultValue": "https://cpndeploy.blob.core.windows.net/arm-templates/",
+            "allowedValues": [
+                "https://cpndeploy.blob.core.windows.net/arm-templates/",
+                "https://cpndeploy.blob.core.windows.net/arm-templates/test/"
+            ],
+            "metadata": {
+                "description": "Url of the storage account container containing the arm templates to use."
+            }
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "apiVersion": "2019-09-01",
+            "type": "Microsoft.KeyVault/vaults",
+            "name": "[parameters('keyVaultName')]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "Application_Name": "[parameters('applicationNameTag')]",
+                "SNOW_Request": "[parameters('snowRequestTag')]"
+            },
+            "properties": {
+                "sku": {
+                    "family": "A",
+                    "name": "Standard"
+                },
+                "tenantId": "7406f7f1-ef6e-49f3-a9c0-002b8bc12056",
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "defaultAction": "Deny",
+                    "ipRules": [],
+                    "virtualNetworkRules": [
+                        {
+                            "id": "[parameters('virtualNetworkId')]",
+                            "ignoreMissingVnetServiceEndpoint": false
+                        }
+                    ]
+                },
+                "accessPolicies": [
+                    {
+                        "tenantId": "7406f7f1-ef6e-49f3-a9c0-002b8bc12056",
+                        "objectId": "[parameters('identityObjectId')]",
+                        "permissions": {
+                            "keys": [],
+                            "secrets": [
+                                "Get",
+                                "List"
+                            ],
+                            "certificates": []
+                        }
+                    }
+                ],
+                "enabledForDeployment": false,
+                "enabledForDiskEncryption": false,
+                "enabledForTemplateDeployment": false,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 90,
+                "enableRbacAuthorization": false,
+                "vaultUri": "[concat('https://',parameters('keyVaultName'),'.vault.azure.net/')]",
+                "provisioningState": "Succeeded"
+            }
+        }
+    ]
+}

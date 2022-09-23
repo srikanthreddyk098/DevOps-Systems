@@ -1,0 +1,216 @@
+﻿@page
+@model AzureAutomation.Web.Pages.Admin.EditWindowsServiceMappingAlertsModel
+@{
+    ViewData["Title"] = "Edit Windows Service Alerts";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="alert alert-success" id="success-alert" style="display:none"></div>
+<div class="alert alert-warning" id="warning-alert" style="display:none"></div>
+<div class="alert alert-danger" id="failed-alert" style="display:none"></div>
+
+<h3 style="margin-top: 0.5%">Windows Service Mapping</h3>
+<p style="margin-bottom: 0">Note: <span style="color: green; font-weight: bold">Green</span> text indicates a default value. When editing, blank values will be set to its default value.</p>
+
+    <div style="padding-top: 1%">
+        <table id="editWindowsServiceMappingTable" class="table table-hover table-sm" style="width: 100%;">
+            <thead>
+            <tr>
+                <th></th>
+                <th scope="col">VM Name</th>
+                <th scope="col">Service</th>
+                <th scope="col">Frequency in Min</th>
+                <th scope="col">Email</th>
+                <th scope="col">Disabled</th>
+                <th scope="col">Disabled Until</th>
+                <th scope="col">Latest Comment</th>
+            </tr>
+            <tr>
+                <th></th>
+                <th style="padding-left: 4px"><input id=editInput1 type="text" class="form-control" placeholder="Search VM name" /></th>
+                <th style="padding-left: 4px"><input id=editInput2 type="text" class="form-control" placeholder="Search service name" /></th>
+                <th style="padding-left: 4px"><input id=editInput3 type="text" class="form-control" placeholder="Search frequency" /></th>
+                <th style="padding-left: 4px"><input id=editInput4 type="text" class="form-control" placeholder="Search email" /></th>
+                <th style="padding-left: 4px"><input id=editInput5 type="text" class="form-control" placeholder="Search disabled" /></th>
+                <th style="padding-left: 4px"><input id=editInput6 type="text" class="form-control" placeholder="Search disabled until date" /></th>
+                <th style="padding-left: 4px"><input id=editInput7 type="text" class="form-control" placeholder="Search comment" /></th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+
+    @section Scripts {
+        <script>
+            $(document).ready(function() {
+                var editor = new $.fn.dataTable.Editor({
+                    ajax: {
+                            type: 'Post',
+                            url: '/Admin/EditWindowsServiceMappingAlerts/?handler=Edit',
+                            headers: {
+                                "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                            }
+                    },
+                    table: '#editWindowsServiceMappingTable',
+                    idSrc: "Id",
+                    //display: "envelope",
+                    fields: [
+                        { label: 'VM', name: 'Vm' },
+                        { label: 'Service', name: 'Service' },
+                        { label: 'Ping Frequency (Min)', name: 'Frequency' },
+                        { label: 'Email', name: 'Email' },
+                        {
+                            label: 'Status',
+                            name: 'IsDisabled',
+                            type: 'radio',
+                            options: [
+                                { label: 'enabled', value: "False" },
+                                { label: 'disabled', value: "True" }
+                            ]
+                        },
+                        {
+                            label: 'Disable Until',
+                            name: 'DisabledUntilDt',
+                            type: 'datetime',
+                            format: 'MM-DD-YYYY h:mm a'
+                        },
+                        { label: 'Comment', name: 'Comment' }
+                    ]
+                });
+
+                editor.on('initCreate',
+                    function(e, node, data, items, type) {
+                        editor.field('Vm').enable();
+                        editor.field('Service').enable();
+                    });
+
+                editor.on('initEdit',
+                    function(e, node, data, items, type) {
+                        editor.field('Vm').disable();
+                        editor.field('Service').disable();
+                        editor.field('Comment').val('');
+                    });
+
+                var editWindowsServiceMappingTable = $('#editWindowsServiceMappingTable').DataTable({
+                    //searching: false,
+                    paging: false,
+                    scrollX: true,
+                    scrollY: '58vh',
+                    scrollCollapse: true,
+                    //force sort icons to top header row
+                    bSortCellsTop: true,
+                    dom: 'Brti',
+                    select: {
+                        style: 'multi+shift'
+                    },
+                    buttons: [
+                        {
+                            extend: 'create',
+                            editor: editor,
+                            className: 'btn btn-success',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            }
+                        },
+                        {
+                            extend: 'edit',
+                            editor: editor,
+                            className: 'btn btn-primary',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            }
+                        },
+                        {
+                            extend: 'remove',
+                            editor: editor,
+                            className: 'btn btn-danger',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            }
+                        },
+                        {
+                            text: 'Select All',
+                            className: 'btn btn-info',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                editWindowsServiceMappingTable.rows({ search: 'applied' }).select();
+                            }
+                        },
+                        {
+                            text: 'Unselect All',
+                            className: 'btn btn-info',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                editWindowsServiceMappingTable.rows({ search: 'applied' }).deselect();
+                            }
+                        },
+                        {
+                            text: 'Clear Filters',
+                            className: 'btn btn-danger',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                $('table thead tr input').each(function() { $(this).val("") });
+                                editWindowsServiceMappingTable.search('').columns().search('').draw();
+                            }
+                        }
+                    ],
+                    ajax: {
+                        url: "/Admin/EditWindowsServiceMappingAlerts?handler=List"
+                    },
+                    rowId: 'Id',
+                    autoWidth: false,
+                    columns: [
+                        {
+                            data: null,
+                            defaultContent: ''
+                        },
+                        { data: 'Vm' },
+                        { data: 'Service' },
+                        { data: 'Frequency' },
+                        { data: 'Email' },
+                        { data: 'IsDisabled' },
+                        { data: 'DisabledUntilDt' },
+                        { data: 'Comment' }
+                    ],
+                    columnDefs: [
+                        {
+                            targets: 0,
+                            searchable: false,
+                            orderable: false,
+                            className: 'select-checkbox',
+                            width: "10px"
+                        },
+                    ],
+                    order: [[1, 'asc'], [2, 'asc']]
+                });
+
+                //enable searching listeners
+                editWindowsServiceMappingTable.columns().eq(0).each(function(colIdx) {
+                    $('#editInput' + colIdx).on(
+                        'keyup change',
+                        function() {
+                            editWindowsServiceMappingTable.column(colIdx).search(this.value).draw();
+                        });
+                });
+
+                editWindowsServiceMappingTable.button(1).enable(false);
+                editWindowsServiceMappingTable.button(2).enable(false);
+
+                editWindowsServiceMappingTable.on('select deselect',
+                    function (e, dt, type, indexes) {
+                        var selectedRows = editWindowsServiceMappingTable.rows( { selected: true } ).count();
+                        editWindowsServiceMappingTable.button(1).enable(selectedRows > 0);
+                        editWindowsServiceMappingTable.button(2).enable(selectedRows > 0);
+                    });
+            });
+        </script>
+    }

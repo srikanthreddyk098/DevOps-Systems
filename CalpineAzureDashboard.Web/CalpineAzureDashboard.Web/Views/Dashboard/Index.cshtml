@@ -1,0 +1,12 @@
+﻿@using Microsoft.PowerBI.AspNet.Mvc.Html
+@{
+    ViewBag.Title = "Dashboard";
+}
+
+@section Breadcrumbs{
+    <ol class="breadcrumb navbar-breadcrumb">
+        <li>Dashboard</li>
+    </ol>
+}
+
+@Html.PowerBIAccessToken()

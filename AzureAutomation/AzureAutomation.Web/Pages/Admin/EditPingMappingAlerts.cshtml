@@ -1,0 +1,288 @@
+﻿@page
+@model AzureAutomation.Web.Pages.Admin.EditPingMappingAlertsModel
+@{
+    ViewData["Title"] = "Edit Ping Alerts";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="alert alert-success" id="success-alert" style="display:none"></div>
+<div class="alert alert-warning" id="warning-alert" style="display:none"></div>
+<div class="alert alert-danger" id="failed-alert" style="display:none"></div>
+
+<h3 style="margin-top: 0.5%">Ping Mappings</h3>
+<p style="margin-bottom: 0">Note: <span style="color: green; font-weight: bold">Green</span> text indicates a default value. When editing, blank values will be set to its default value.</p>
+
+    <div style="padding-top: 1%">
+        <table id="editPingMappingsTable" class="table table-hover table-sm" style="width: 100%;">
+            <thead>
+            <tr>
+                <th></th>
+                <th scope="col">Subscription</th>
+                <th scope="col">Resource Group</th>
+                <th scope="col">VM Name</th>
+                <th scope="col">Region</th>
+                <th scope="col">Hostname</th>
+                <th scope="col">Private IP</th>
+                <th scope="col">Frequency in Min</th>
+                <th scope="col">Email</th>
+                <th scope="col">Disabled</th>
+                <th scope="col">Disabled Until</th>
+                <th scope="col">Latest Comment</th>
+            </tr>
+            <tr>
+                <th></th>
+                <th style="padding-left: 4px"><input id=editInput1 type="text" class="form-control" placeholder="Search subscription" /></th>
+                <th style="padding-left: 4px"><input id=editInput2 type="text" class="form-control" placeholder="Search resource group" /></th>
+                <th style="padding-left: 4px"><input id=editInput3 type="text" class="form-control" placeholder="Search VM name" /></th>
+                <th style="padding-left: 4px"><input id=editInput4 type="text" class="form-control" placeholder="Search region" /></th>
+                <th style="padding-left: 4px"><input id=editInput5 type="text" class="form-control" placeholder="Search hostname" /></th>
+                <th style="padding-left: 4px"><input id=editInput6 type="text" class="form-control" placeholder="Search IP" /></th>
+                <th style="padding-left: 4px"><input id=editInput7 type="text" class="form-control" placeholder="Search frequency" /></th>
+                <th style="padding-left: 4px"><input id=editInput8 type="text" class="form-control" placeholder="Search email" /></th>
+                <th style="padding-left: 4px"><input id=editInput9 type="text" class="form-control" placeholder="Search disabled" /></th>
+                <th style="padding-left: 4px"><input id=editInput10 type="text" class="form-control" placeholder="Search disabled until date" /></th>
+                <th style="padding-left: 4px"><input id=editInput11 type="text" class="form-control" placeholder="Search comment" /></th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+
+    @section Scripts {
+        <script>
+            $(document).ready(function() {
+                var editor = new $.fn.dataTable.Editor({
+                    ajax: {
+                        edit: {
+                            type: 'Post',
+                            url: '/Admin/EditPingMappingAlerts/?handler=Edit',
+                            headers: {
+                                "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                            }
+                        }
+                    },
+                    table: '#editPingMappingsTable',
+                    idSrc: "Id",
+                    //display: "envelope",
+                    fields: [
+                        { label: 'Subscription', name: 'Subscription', type: 'readonly', submit: false },
+                        { label: 'Resource Group', name: 'ResourceGroup', type: 'readonly', submit: false },
+                        { label: 'VM', name: 'VmName', type: 'readonly', submit: false },
+                        { label: 'Region', name: 'Region', type: 'readonly', submit: false },
+                        { label: 'Hostname to Ping', name: 'Hostname', multiEditable: false },
+                        { label: 'Private IP Address', name: 'PrivateIp', multiEditable: false },
+                        { label: 'Ping Frequency (Min)', name: 'Frequency' },
+                        { label: 'Email', name: 'Email' },
+                        {
+                            label: 'Status',
+                            name: 'IsDisabled',
+                            type: 'radio',
+                            options: [
+                                { label: 'enabled', value: "False" },
+                                { label: 'disabled', value: "True" }
+                            ]
+                        },
+                        {
+                            label: 'Disable Until',
+                            name: 'DisabledUntilDt',
+                            type: 'datetime',
+                            format: 'MM-DD-YYYY h:mm a'
+                        },
+                        { label: 'Comment', name: 'Comment' }
+                    ]
+                });
+
+                editor.on('initEdit',
+                    function(e, node, data, items, type) {
+                        if (!editor.field('Hostname').isMultiValue() &&
+                            editor.field('Hostname').val().includes('(default)')) {
+                            editor.field('Hostname').val('');
+                        } else {
+                            var rows = editor.field('Hostname').multiGet();
+                            $.each(rows,
+                                function(id, value) {
+                                    if (value.includes("(default)")) {
+                                        editor.field('Hostname').multiSet(id, '');
+                                    }
+                                });
+                        }
+                        if (!editor.field('PrivateIp').isMultiValue() &&
+                            editor.field('PrivateIp').val().includes("(default)")) {
+                            editor.field('PrivateIp').val('');
+                        } else {
+                            var rows = editor.field('PrivateIp').multiGet();
+                            $.each(rows,
+                                function(id, value) {
+                                    if (value.includes("(default)")) {
+                                        editor.field('PrivateIp').multiSet(id, '');
+                                    }
+                                });
+                        }
+                        if (!editor.field('Frequency').isMultiValue() &&
+                            editor.field('Frequency').val().includes("(default)")) {
+                            editor.field('Frequency').val('');
+                        } else {
+                            var rows = editor.field('Frequency').multiGet();
+                            $.each(rows,
+                                function(id, value) {
+                                    if (value.includes("(default)")) {
+                                        editor.field('Frequency').multiSet(id, '');
+                                    }
+                                });
+                        }
+                        if (!editor.field('Email').isMultiValue() &&
+                            editor.field('Email').val().includes("(default)")) {
+                            editor.field('Email').val('');
+                        } else {
+                            var rows = editor.field('Email').multiGet();
+                            $.each(rows,
+                                function(id, value) {
+                                    if (value.includes("(default)")) {
+                                        editor.field('Email').multiSet(id, '');
+                                    }
+                                });
+                        }
+                        editor.field('Comment').val('');
+                    });
+
+                var editPingMappingsTable = $('#editPingMappingsTable').DataTable({
+                    //searching: false,
+                    paging: false,
+                    scrollX: true,
+                    scrollY: '58vh',
+                    scrollCollapse: true,
+                    //force sort icons to top header row
+                    bSortCellsTop: true,
+                    dom: 'Brti',
+                    select: {
+                        style: 'multi+shift'
+                    },
+                    buttons: [
+                        {
+                            extend: 'edit',
+                            editor: editor,
+                            className: 'btn btn-primary',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            }
+                        },
+                        {
+                            text: 'Select All',
+                            className: 'btn btn-info',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                editPingMappingsTable.rows({ search: 'applied' }).select();
+                            }
+                        },
+                        {
+                            text: 'Unselect All',
+                            className: 'btn btn-info',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                editPingMappingsTable.rows({ search: 'applied' }).deselect();
+                            }
+                        },
+                        {
+                            text: 'Clear Filters',
+                            className: 'btn btn-danger',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                $('table thead tr input').each(function() { $(this).val("") });
+                                editPingMappingsTable.search('').columns().search('').draw();
+                            }
+                        }
+                    ],
+                    ajax: {
+                        url: "/Admin/EditPingMappingAlerts?handler=List"
+                    },
+                    rowId: 'Id',
+                    autoWidth: false,
+                    columns: [
+                        {
+                            data: null,
+                            defaultContent: ''
+                        },
+                        { data: 'Subscription' },
+                        { data: 'ResourceGroup' },
+                        { data: 'VmName' },
+                        { data: 'Region' },
+                        { data: 'Hostname' },
+                        { data: 'PrivateIp' },
+                        { data: 'Frequency' },
+                        { data: 'Email' },
+                        { data: 'IsDisabled' },
+                        { data: 'DisabledUntilDt' },
+                        { data: 'Comment' }
+                    ],
+                    columnDefs: [
+                        {
+                            targets: 0,
+                            searchable: false,
+                            orderable: false,
+                            className: 'select-checkbox',
+                            width: "10px"
+                        },
+                        {
+                            targets: [5, 6, 7, 8],
+                            render: function(data, type, row, meta) {
+                                if (data.includes('(default)')) {
+                                    return '<span style="color: green">' +
+                                        data.replace('(default)', '').trim() +
+                                        '</span>';
+                                } else {
+                                    return '<span>' + data + '</span>';
+                                }
+                            }
+                        },
+                        {
+                            targets: [2],
+                            width: "10%"
+                        },
+                        {
+                            targets: [3],
+                            width: "10%"
+                        },
+                        {
+                            targets: [7],
+                            width: "5%"
+                        },
+                        {
+                            targets: [8],
+                            width: "20%"
+                        },
+                        {
+                            targets: [9],
+                            width: "5%"
+                        },
+                    ],
+                    order: [[1, 'asc'], [2, 'asc'], [3, 'asc'], [4, 'asc']]
+                });
+
+                //enable searching listeners
+                editPingMappingsTable.columns().eq(0).each(function(colIdx) {
+                    $('#editInput' + colIdx).on(
+                        'keyup change',
+                        function() {
+                            editPingMappingsTable.column(colIdx).search(this.value).draw();
+                        });
+                });
+
+                editPingMappingsTable.button(0).enable(false);
+
+                editPingMappingsTable.on('select deselect',
+                    function (e, dt, type, indexes) {
+                        var selectedRows = editPingMappingsTable.rows( { selected: true } ).count();
+                        editPingMappingsTable.button(0).enable(selectedRows > 0);
+                    });
+            });
+        </script>
+    }

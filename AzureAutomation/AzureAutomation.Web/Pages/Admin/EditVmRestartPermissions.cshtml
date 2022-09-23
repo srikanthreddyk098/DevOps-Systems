@@ -1,0 +1,453 @@
+﻿@page
+@model AzureAutomation.Web.Pages.Admin.EditVmRestartPermissionsModel
+@{
+    ViewData["Title"] = "Edit VM Restart Permissions";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="alert alert-success" id="success-alert" style="display:none"></div>
+<div class="alert alert-warning" id="warning-alert" style="display:none"></div>
+<div class="alert alert-danger" id="failed-alert" style="display:none"></div>
+
+<h3 style="margin-top: 0.5%">
+    Assigned Permissions
+    <span>
+        <button type="button" class="btn btn-primary float-right" data-toggle="modal" data-target="#addPermissionModal">Add new permission</button>
+    </span>
+</h3>
+<div class="modal fade" id="addPermissionModal" tabindex="-1" role="dialog" aria-labelledby="addPermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 80%;" role="document">
+        <div class="modal-content">
+            <div class="alert alert-danger" id="add-permission-error-alert" style="display:none"></div>
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPermissionModalLabel">Add permission</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <span style="display: inline-block; width: 110px; margin: 1%">Users to add: </span>
+                    <select id="userDropdown" multiple="multiple" style="width: 75%; display: none"></select>
+                </div>
+                <div>
+                    <span style="display: inline-block; width: 110px; margin: 1%">Groups to add: </span>
+                    <select id="groupDropdown" multiple="multiple" style="width: 75%; display: none;"></select>
+                </div>
+                <div style="padding-top: 1%">
+                    <table id="addPermissionTable" class="table table-hover table-sm" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="max-width: 10px"></th>
+                                <th></th>
+                                <th scope="col">Subscription</th>
+                                <th scope="col">Resource Group</th>
+                                <th scope="col">Server Name</th>
+                            </tr>
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th style="padding-left: 4px"><input id=addInput2 type="text" class="form-control add-permission-filter" placeholder="Search subscription" /></th>
+                                <th style="padding-left: 4px"><input id=addInput3 type="text" class="form-control add-permission-filter" placeholder="Search resource group" /></th>
+                                <th style="padding-left: 4px"><input id=addInput4 type="text" class="form-control add-permission-filter" placeholder="Search server name" /></th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="addPermissionBtn">Save permission</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="padding-top: 1%">
+    <table id="editPermissionTable" class="table table-hover table-sm" style="width: 100%;">
+        <thead>
+            <tr>
+                <th></th>
+                <th scope="col">Type</th>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Subscription</th>
+                <th scope="col">Resource Group</th>
+                <th scope="col">Server Name</th>
+                <th style="width: 50px"></th>
+            </tr>
+            <tr>
+                <th></th>
+                <th style="padding-left: 4px"><input id=editInput1 type="text" class="form-control" placeholder="Search type" /></th>
+                <th style="padding-left: 4px"><input id=editInput2 type="text" class="form-control" placeholder="Search name" /></th>
+                <th style="padding-left: 4px"><input id=editInput3 type="text" class="form-control" placeholder="Search email" /></th>
+                <th style="padding-left: 4px"><input id=editInput4 type="text" class="form-control" placeholder="Search subscription" /></th>
+                <th style="padding-left: 4px"><input id=editInput5 type="text" class="form-control" placeholder="Search resource group" /></th>
+                <th style="padding-left: 4px"><input id=editInput6 type="text" class="form-control" placeholder="Search server name" /></th>
+                <th></th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            var editPermissionTable = $('#editPermissionTable').DataTable({
+                //searching: false,
+                paging: false,
+                scrollY: '62vh',
+                scrollCollapse: true,
+                //force sort icons to top header row
+                bSortCellsTop: true,
+                //add extract buttons
+                dom: 'Brti',
+                buttons: [
+                    {
+                        text: 'Clear Filters',
+                        className: 'btn btn-danger',
+                        init: function (api, node, config) {
+                            $(node).removeClass('dt-button');
+                        },
+                        action: function (e) {
+                            e.preventDefault();
+                            $('input[id^="editInput"]').each(function () { $(this).val("") });
+                            editPermissionTable.columns().search('').draw();
+                        }
+                    }
+                ],
+                ajax: {
+                    url: "/Admin/EditVmRestartPermissions?handler=UserVms"
+                },
+                columns: [
+                    { data: 'Id' },
+                    { data: 'Type' },
+                    { data: 'Name' },
+                    { data: 'Email' },
+                    { data: 'Subscription' },
+                    { data: 'ResourceGroup' },
+                    { data: 'VmName' },
+                    { data: null,
+                        defaultContent: ""
+                    }
+                ],
+                columnDefs: [
+                    {
+                        targets: [0],
+                        visible: false,
+                        searchable: false
+                    },
+                    {
+                        targets: [-1],
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row, meta) {
+                            if (data.Id !== 0) {
+                                return "<button class='btn btn-danger deletePermissionButton'>Delete</button>";
+                            }
+                        }
+                    }
+                ],
+                order: [[1, 'asc'], [2, 'asc'], [3, 'asc'], [4, 'asc'], [5, 'asc'], [6, 'asc']]
+            });
+
+            //enable searching listeners
+            editPermissionTable.columns().eq(0).each(function (colIdx) {
+                $('#editInput' + colIdx).on(
+                    'keyup change',
+                    function () {
+                        editPermissionTable.column(colIdx).search(this.value).draw();
+                    });
+            });
+
+            var updateEditPermissionTable = function () {
+                editPermissionTable.ajax.reload();
+            }
+
+            $('#editPermissionTable tbody').on('click', 'button', function () {
+                var idToDelete = editPermissionTable.row($(this).parents('tr')).data().Id;
+                $.ajax({
+                    type: 'POST',
+                    url: '/Admin/EditVmRestartPermissions?handler=Delete',
+                    headers: {
+                        "RequestVerificationToken": $(
+                            'input:hidden[name="__RequestVerificationToken"]').val()
+                    },
+                    contentType: "application/json",
+                    data: JSON.stringify(idToDelete),
+                    success: function (message, textStatus, jQxhr) {
+                        $("#addPermissionModal").modal("hide");
+                        //display success alert
+                        $("#success-alert").html('Permission was deleted successfully');
+                        $("#success-alert").fadeTo(5000, 500).slideUp(500);
+
+                        updateEditPermissionTable();
+                    },
+                    error: function (jqxhr, textStatus, error) {
+                        //display success alert
+                        $("#add-permission-error-alert")
+                            .html('<strong>Failed! </strong>' + textStatus + ": " + error);
+                        $("#add-permission-error-alert").fadeTo(5000, 500).slideUp(500);
+
+                        var err = textStatus + ", " + error;
+                        console.log("Request Failed: " + err);
+                    }
+                });
+            });
+
+            var addPermissionDatatable = null;
+            $('#addPermissionModal').on('shown.bs.modal',
+                function () {
+                    $('#userDropdown').select2({
+                        placeholder: "Select user(s)",
+                        ajax: {
+                            delay: 250,
+                            url: "/Admin/EditVmRestartPermissions?handler=AdUsers",
+                            dataType: 'json',
+                            data: function (params) {
+                                return {
+                                    pageNumber: params.page || 0,
+                                    searchTerm: params.term
+                                };
+                            },
+                            processResults: function (data) {
+                                return {
+                                    results: data.results,
+                                    pagination: { more: data.hasMore }
+                                };
+                            }
+                        }
+                    });
+
+                    $('#groupDropdown').select2({
+                        placeholder: "Select group(s)",
+                        ajax: {
+                            delay: 250,
+                            url: "/Admin/EditVmRestartPermissions?handler=AdGroups",
+                            dataType: 'json',
+                            data: function (params) {
+                                return {
+                                    pageNumber: params.page || 0,
+                                    searchTerm: params.term
+                                };
+                            },
+                            processResults: function (data) {
+                                return {
+                                    results: data.results,
+                                    pagination: { more: data.hasMore }
+                                };
+                            }
+                        }
+                    });
+
+                    var clearAddPermissionFilters = function () {
+                        $('input[id^="addInput"]').each(function () { $(this).val("") });
+                        addPermissionDatatable.columns().search('').draw();
+                    }
+                    var deselectAllAddPermission = function () {
+                        addPermissionDatatable.rows().deselect();
+                    }
+
+                    var resetAddPermissionModal = function () {
+                        clearAddPermissionFilters();
+                        deselectAllAddPermission();
+                        $('#userDropdown').val(null).trigger('change');
+                        $('#groupDropdown').val(null).trigger('change');
+                    }
+
+                    if ($.fn.dataTable.isDataTable('#addPermissionTable')) {
+                        addPermissionDatatable = $('#addPermissionTable').DataTable();
+                    } else {
+                        addPermissionDatatable = $('#addPermissionTable').DataTable({
+                            //searching: false,
+                            paging: false,
+                            scrollY: 'calc(40vh)',
+                            scrollCollapse: true,
+                            //force sort icons to top header row
+                            bSortCellsTop: true,
+                            //add extract buttons
+                            dom: 'Brti',
+                            buttons: [
+                                {
+                                    text: 'Clear All',
+                                    className: 'btn btn-info',
+                                    init: function (api, node, config) {
+                                        $(node).removeClass('dt-button');
+                                    },
+                                    action: function (e) {
+                                        e.preventDefault();
+                                        resetAddPermissionModal();
+                                    }
+                                },
+                                {
+                                    text: 'Clear Filters',
+                                    className: 'btn btn-info',
+                                    init: function (api, node, config) {
+                                        $(node).removeClass('dt-button');
+                                    },
+                                    action: function (e) {
+                                        e.preventDefault();
+                                        clearAddPermissionFilters();
+                                    }
+                                }, {
+                                    text: 'De-Select All',
+                                    className: 'btn btn-info',
+                                    init: function (api, node, config) {
+                                        $(node).removeClass('dt-button');
+                                    },
+                                    action: function (e) {
+                                        e.preventDefault();
+                                        deselectAllAddPermission();
+                                    }
+                                }
+                            ],
+                            ajax: {
+                                url: "/Admin/EditVmRestartPermissions?handler=Vms"
+                            },
+                            columns: [
+                                {
+                                    data: null,
+                                    defaultContent: ''
+                                },
+                                { data: 'Id' },
+                                { data: 'Subscription' },
+                                { data: 'ResourceGroup' },
+                                { data: 'VmName' }
+                            ],
+                            columnDefs: [
+                                {
+                                    targets: 0,
+                                    searchable: false,
+                                    orderable: false,
+                                    className: 'select-checkbox'
+                                },
+                                {
+                                    targets: 1,
+                                    visible: false,
+                                    searchable: false,
+                                    orderable: false
+                                }
+                            ],
+                            select: {
+                                style: 'multi+shift'
+                            },
+                            order: [[2, 'asc'], [3, 'asc'], [4, 'asc']]
+                        });
+
+                        //enable searching listeners
+                        addPermissionDatatable.columns().eq(0).each(function (colIdx) {
+                            $('#addInput' + colIdx).on(
+                                'keyup change',
+                                function () {
+                                    addPermissionDatatable.column(colIdx).search(this.value).draw();
+                                });
+                        });
+
+                        var toggleRow = function (row) {
+                            $(row).toggleClass('selected');
+                            var numberOfRowsSelected = addPermissionDatatable.rows('.selected').data().length;
+                            $('#rowsSelectedLabel').text(numberOfRowsSelected + ' row(s) selected');
+                        }
+
+                        addPermissionDatatable.on('select',
+                            function (e, dt, type, indexes) {
+                                if (type === 'row') {
+                                    toggleRow(this);
+                                }
+                            });
+
+                        addPermissionDatatable.on('deselect',
+                            function (e, dt, type, indexes) {
+                                if (type === 'row') {
+                                    toggleRow(this);
+                                }
+                            });
+
+                        $('#addPermissionBtn').on('click',
+                            function () {
+                                var userIdsToAdd = [];
+                                $.each($('#userDropdown').select2('data'),
+                                    function (key, value) {
+                                        userIdsToAdd.push(parseInt(value.id));
+                                    });
+
+                                var groupIdsToAdd = [];
+                                $.each($('#groupDropdown').select2('data'),
+                                    function (key, value) {
+                                        groupIdsToAdd.push(parseInt(value.id));
+                                    });
+
+                                var vmIdsToAdd = [];
+                                $.each(addPermissionDatatable.rows('.selected')[0],
+                                    function (key, value) {
+                                        vmIdsToAdd.push(parseInt(addPermissionDatatable.row(value).data().Id));
+                                    });
+
+                                if (userIdsToAdd.length === 0 && groupIdsToAdd.length === 0) {
+                                    $("#add-permission-error-alert").hide();
+                                    $("#add-permission-error-alert")
+                                        .html("Please make sure at least one user or group is selected");
+                                    $("#add-permission-error-alert").fadeTo(5000, 500).slideUp(500);
+                                } else if (vmIdsToAdd.length === 0) {
+                                    $("#add-permission-error-alert").hide();
+                                    $("#add-permission-error-alert")
+                                        .html("Please make sure at least one VM is selected");
+                                    $("#add-permission-error-alert").fadeTo(5000, 500).slideUp(500);
+                                } else {
+                                    $('#addPermissionBtn').prop('disabled', 'disabled');
+                                    $('#addPermissionBtn').text("Saving permissions...");
+
+                                    $.ajax({
+                                        type: 'POST',
+                                        url: '/Admin/EditVmRestartPermissions?handler=Add',
+                                        headers: {
+                                            "RequestVerificationToken": $(
+                                                'input:hidden[name="__RequestVerificationToken"]').val()
+                                        },
+                                        contentType: "application/json",
+                                        data: JSON.stringify({
+                                            UserIdsToAdd: userIdsToAdd,
+                                            GroupIdsToAdd: groupIdsToAdd,
+                                            VmIdsToAdd: vmIdsToAdd
+                                        }),
+                                        success: function (message, textStatus, jQxhr) {
+                                            $("#addPermissionModal").modal("hide");
+                                            //display success alert
+                                            if (message.includes('permission(s) already existed')) {
+                                                $("#warning-alert").html('<strong>Warning! </strong>' + message);
+                                                $("#warning-alert").fadeTo(10000, 500).slideUp(500);
+                                            } else {
+                                                $("#success-alert").html('<strong>Success! </strong>' + message);
+                                                $("#success-alert").fadeTo(5000, 500).slideUp(500);
+                                            }
+
+                                            updateEditPermissionTable();
+                                            resetAddPermissionModal();
+
+                                            $('#addPermissionBtn').text("Save permission");
+                                            $('#addPermissionBtn').prop('disabled', '');
+                                            $('#userDropdown').val(null).trigger('change');
+                                            $('#groupDropdown').val(null).trigger('change');
+                                        },
+                                        error: function (jqxhr, textStatus, error) {
+                                            //display success alert
+                                            $("#add-permission-error-alert")
+                                                .html('<strong>Failed! </strong>' + textStatus + ": " + error);
+                                            $("#add-permission-error-alert").fadeTo(5000, 500).slideUp(500);
+
+                                            var err = textStatus + ", " + error;
+                                            console.log("Request Failed: " + err);
+
+                                            $('#addPermissionBtn').text("Save permission");
+                                            $('#addPermissionBtn').prop('disabled', '');
+                                        }
+                                    });
+                                }
+                            });
+                    }
+                });
+        });
+    </script>
+}

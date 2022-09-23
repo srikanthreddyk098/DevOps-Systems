@@ -1,0 +1,27 @@
+<Tenant name="05ddf9d7-4671-459e-b956-18c1e1cc5293">
+	<Subscription name="aabadc60-8c20-455d-ad78-2ee6eb523700">
+		<LogicApp name="CashAppApplyPayment-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="CashAppApplyPayment-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="CashAppProcessPayment-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="CreateEBTServiceOrder-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="CreatePaymentArrangement-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="CreateProtectionRelate-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="DataTransformation-PriceIndex-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="DataTransformation-PriceIndex-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="DataTransformation-PriceProfile-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="DataTransformation-PriceProfile-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="EnrollCustomerLogicApp-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="PostTransaction-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="ResendInvoice-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="RRDInvoice-GenerateUFD-LogicApp-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="UpdateAccount-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="UpdateCustomer-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="UpdateInvoiceDistribution-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="UpdateInvoiceDistributionInfo-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="UpdateTransactionLogicApp-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="UpdateTransactionUserFieldLogicApp-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="UpdateUserFieldData-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="WACOEPriceProfileLogicApp-Champion-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+		<LogicApp name="WACOEPriceProfileLogicApp-Solutions-PROD" resourcegroup="Solutions_Integrations_Prod"/>
+	</Subscription>
+</Tenant>

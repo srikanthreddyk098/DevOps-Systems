@@ -1,0 +1,297 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "businessUnit": {
+            "allowedValues": [
+                "calpine",
+                "retail",
+                "cca"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "Important: The subscription for the resource group must match the business unit. All 'calpine' apps must be built in the Commercial Dev or Commerical Prod subscriptions. All 'retail' (includes Champion, Solutions, and NAP) apps must be built in the Retail Dev or Retail Prod subscriptions. All 'cca' apps must be built in the CCA Dev or CCA subscriptions."
+            }
+        },
+        "location": {
+            "allowedValues": [
+                "eastus2",
+                "westus"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "The location in which the resources should be deployed."
+            }
+        },
+        "networkType": {
+            "defaultValue": "internal",
+            "allowedValues": [
+                "internal",
+                "dmz"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "Select 'DMZ' if app needs to be publicly accessible and 'internal' if not."
+            }
+        },
+        "environment": {
+            "allowedValues": [
+                "dev",
+                "test",
+                "uat",
+                "prod"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "The environment for the app."
+            }
+        },
+        "appName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the app. Note: Do NOT add the environment to the name as this will be automatically added for you."
+            }
+        },
+        "appServiceKind": {
+            "allowedValues": [
+                "app",
+                "functionapp"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "Type of app service."
+            }
+        },
+        "functionStorageAccountName": {
+            "type": "string",
+            "defaultValue": "default",
+            "metadata": {
+                "description": "Overrides the auto-generated name of the function app storage account (if applicable). Use this only if the app name exceeds 18 characters."
+            }
+        },
+        "runtimeStack": {
+            "defaultValue": "dotnetcore",
+            "allowedValues": [
+                "dotnetcore",
+                "dotnet"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "Select 'dotnetcore' for .NET Core apps. Select 'dotnet' for .NET Framework apps."
+            }
+        },
+        "createApplicationInsight": {
+            "defaultValue": "Yes",
+            "allowedValues": [
+                "Yes"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "If yes, an application insights will be created and connected to the app service."
+            }
+        },
+        "createKeyVault": {
+            "defaultValue": "Yes",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "If yes, a key vault will be created and the app service will be granted 'get' and 'list' permissions."
+            }
+        },
+        "keyVaultName": {
+            "type": "string",
+            "defaultValue": "default",
+            "metadata": {
+                "description": "Overrides the auto-generated name of the key vault (if applicable). Use this only if the auto generated key vault would name exceed 24 characters. Key vault format is 'kv-<app_name>-<environment>"
+            }
+        },
+        "appServicePlanId": {
+            "type": "string",
+            "defaultValue": "default",
+            "metadata": {
+                "description": "Specifies a specific app service plan id. Leave 'default' to use the default service plan for the ASE."
+            }
+        },
+        "applicationNameTag": {
+            "type": "string",
+            "metadata": {
+                "description": "The value to assign to the Application_Name tag."
+            }
+        },
+        "snowRequestTag": {
+            "type": "string",
+            "metadata": {
+                "description": "The value to assign to the SNOW_Request tag."
+            }
+        },
+        "useTestTemplates": {
+            "type": "string",
+            "defaultValue": "No",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Yes/No value to determine whether or not to use the 'test' templates or the 'production' templates."
+            }
+        }
+    },
+    "variables": {
+        "formattedAppName": "[concat(replace(parameters('appName'),' ',''),if(equals(parameters('environment'),'prod'),'',concat('-',parameters('environment'))))]",
+        "formattedKeyVaultName": "[if(equals(parameters('keyVaultName'),'default'),concat('kv-',replace(parameters('appName'),' ',''),'-',parameters('environment')),parameters('keyVaultName'))]",
+        "formattedRuntimeStack": "[if(equals(parameters('appServiceKind'),'functionapp'),'dotnet',parameters('runtimeStack'))]",
+        "formattedNetworkType": "[if(equals(parameters('networkType'),'internal'),'int',parameters('networkType'))]",
+        "armTemplatesBaseUrl": "[if(equals(parameters('useTestTemplates'),'Yes'),'https://cpndeploy.blob.core.windows.net/arm-templates/test','https://cpndeploy.blob.core.windows.net/arm-templates/')]",
+        "appServiceTemplateUrl": "[concat(variables('armTemplatesBaseUrl'),if(equals(parameters('appServiceKind'),'app'),'AppService-ASE-App.json',if(equals(parameters('appServiceKind'),'functionapp'),'AppService-ASE-Function.json','')))]",
+        "aseName": "[concat('ase-',parameters('businessUnit'),'-',parameters('location'),'-',if(equals(parameters('environment'),'prod'),'prod','dev'),'-',variables('formattedNetworkType'),'-01')]",
+        "aseId": "[variables(concat(variables('aseName'),'-aseId'))]",
+        "aseAspId": "[if(equals(parameters('appServicePlanId'),'default'),variables(concat(variables('aseName'),'-aspId')),parameters('appServicePlanId'))]",
+        "aseNetworkId": "[variables(concat(variables('aseName'),'-subnetId'))]",
+        "aseDomain": "[concat(variables('aseName'),'.appserviceenvironment.net')]",
+        "ase-calpine-eastus2-dev-dmz-01-aseId": "/subscriptions/0c635805-5324-4ef9-a7a2-1a86ca9445a6/resourceGroups/cpn_net_comdev_rg01/providers/Microsoft.Web/hostingEnvironments/ase-calpine-eastus2-dev-dmz-01",
+        "ase-calpine-eastus2-dev-dmz-01-aspId": "/subscriptions/0c635805-5324-4ef9-a7a2-1a86ca9445a6/resourceGroups/pz_rg_com_dev_app_service_plans_01/providers/Microsoft.Web/serverfarms/plan-calpine-eastus2-dev-dmz-01",
+        "ase-calpine-eastus2-dev-dmz-01-subnetId": "/subscriptions/0c635805-5324-4ef9-a7a2-1a86ca9445a6/resourceGroups/cpn_net_comdev_rg01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_CPN_E2_DEV_ASE_01/subnets/PZ_SNET_DMZ_DEV_ASE_01",
+        "ase-calpine-eastus2-dev-int-01-aseId": "/subscriptions/0c635805-5324-4ef9-a7a2-1a86ca9445a6/resourceGroups/cpn_net_comdev_rg01/providers/Microsoft.Web/hostingEnvironments/ase-calpine-eastus2-dev-int-01",
+        "ase-calpine-eastus2-dev-int-01-aspId": "/subscriptions/0c635805-5324-4ef9-a7a2-1a86ca9445a6/resourceGroups/pz_rg_com_dev_app_service_plans_01/providers/Microsoft.Web/serverfarms/plan-calpine-eastus2-dev-int-01",
+        "ase-calpine-eastus2-dev-int-01-subnetId": "/subscriptions/0c635805-5324-4ef9-a7a2-1a86ca9445a6/resourceGroups/cpn_net_comdev_rg01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_CPN_E2_DEV_ASE_01/subnets/PZ_SNET_INT_DEV_ASE_01",
+        "ase-calpine-eastus2-prod-dmz-01-aseId": "/subscriptions/d2f3bfdb-cf0e-4dab-9a0b-0440cff212b2/resourceGroups/cpn_net_commercial_rg01/providers/Microsoft.Web/hostingEnvironments/ase-calpine-eastus2-prod-dmz-01",
+        "ase-calpine-eastus2-prod-dmz-01-aspId": "/subscriptions/d2f3bfdb-cf0e-4dab-9a0b-0440cff212b2/resourceGroups/pz_rg_cpn_prod_app_service_plans_01/providers/Microsoft.Web/serverfarms/plan-calpine-eastus2-prod-dmz-01",
+        "ase-calpine-eastus2-prod-dmz-01-subnetId": "/subscriptions/d2f3bfdb-cf0e-4dab-9a0b-0440cff212b2/resourceGroups/cpn_net_commercial_rg01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_CPN_E2_PROD_ASE_01/subnets/PZ_SNET_DMZ_PROD_ASE_01",
+        "ase-calpine-eastus2-prod-int-01-aseId": "/subscriptions/d2f3bfdb-cf0e-4dab-9a0b-0440cff212b2/resourceGroups/cpn_net_commercial_rg01/providers/Microsoft.Web/hostingEnvironments/ase-calpine-eastus2-prod-int-01",
+        "ase-calpine-eastus2-prod-int-01-aspId": "/subscriptions/d2f3bfdb-cf0e-4dab-9a0b-0440cff212b2/resourceGroups/PZ_RG_COM_PROD_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-calpine-eastus2-prod-int-01",
+        "ase-calpine-eastus2-prod-int-01-subnetId": "/subscriptions/d2f3bfdb-cf0e-4dab-9a0b-0440cff212b2/resourceGroups/cpn_net_commercial_rg01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_CPN_E2_PROD_ASE_01/subnets/PZ_SNET_INT_PROD_ASE_01",
+        "ase-cca-westus-dev-dmz-01-aseId": "/subscriptions/f3c4b539-7c05-49b3-8657-479ab0846f66/resourceGroups/PZ_RG_CCA_DEV_VNET_02/providers/Microsoft.Web/hostingEnvironments/ase-cca-westus-dev-dmz-01",
+        "ase-cca-westus-dev-dmz-01-aspId": "/subscriptions/f3c4b539-7c05-49b3-8657-479ab0846f66/resourceGroups/PZ_RG_CCA_DEV_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-cca-westus-dev-dmz-01",
+        "ase-cca-westus-dev-dmz-01-subnetId": "/subscriptions/f3c4b539-7c05-49b3-8657-479ab0846f66/resourceGroups/PZ_RG_CCA_DEV_VNET_02/providers/Microsoft.Network/virtualNetworks/PZ_VNET_CCA_W_DEV_ASE_01/subnets/PZ_SNET_DMZ_DEV_ASE_01",
+        "ase-cca-westus-dev-int-01-aseId": "/subscriptions/f3c4b539-7c05-49b3-8657-479ab0846f66/resourceGroups/PZ_RG_CCA_DEV_VNET_02/providers/Microsoft.Web/hostingEnvironments/ase-cca-westus-dev-int-01",
+        "ase-cca-westus-dev-int-01-aspId": "/subscriptions/f3c4b539-7c05-49b3-8657-479ab0846f66/resourceGroups/PZ_RG_CCA_DEV_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-cca-westus-dev-int-01",
+        "ase-cca-westus-dev-int-01-subnetId": "/subscriptions/f3c4b539-7c05-49b3-8657-479ab0846f66/resourceGroups/PZ_RG_CCA_DEV_VNET_02/providers/Microsoft.Network/virtualNetworks/PZ_VNET_CCA_W_DEV_ASE_01/subnets/PZ_SNET_INT_DEV_ASE_01",
+        "ase-cca-westus-prod-dmz-01-aseId": "/subscriptions/97de0298-ca3c-4a78-878f-9f181b482059/resourceGroups/PZ_RG_CCA_PROD_VNET_01/providers/Microsoft.Web/hostingEnvironments/ase-cca-westus-prod-dmz-01",
+        "ase-cca-westus-prod-dmz-01-aspId": "/subscriptions/97de0298-ca3c-4a78-878f-9f181b482059/resourceGroups/PZ_RG_CCA_PROD_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-cca-westus-prod-dmz-01",
+        "ase-cca-westus-prod-dmz-01-subnetId": "/subscriptions/97de0298-ca3c-4a78-878f-9f181b482059/resourceGroups/PZ_RG_CCA_PROD_VNET_01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_CCA_W_PROD_ASE_01/subnets/PZ_SNET_DMZ_PROD_ASE_01",
+        "ase-cca-westus-prod-int-01-aseId": "/subscriptions/97de0298-ca3c-4a78-878f-9f181b482059/resourceGroups/PZ_RG_CCA_PROD_VNET_01/providers/Microsoft.Web/hostingEnvironments/ase-cca-westus-prod-int-01",
+        "ase-cca-westus-prod-int-01-aspId": "/subscriptions/97de0298-ca3c-4a78-878f-9f181b482059/resourceGroups/PZ_RG_CCA_PROD_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-cca-westus-prod-int-01",
+        "ase-cca-westus-prod-int-01-subnetId": "/subscriptions/97de0298-ca3c-4a78-878f-9f181b482059/resourceGroups/PZ_RG_CCA_PROD_VNET_01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_CCA_W_PROD_ASE_01/subnets/PZ_SNET_INT_PROD_ASE_01",
+        "ase-retail-eastus2-dev-dmz-01-aseId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/cpn_net_retdev_rg01/providers/Microsoft.Web/hostingEnvironments/ase-retail-eastus2-dev-dmz-01",
+        "ase-retail-eastus2-dev-dmz-01-aspId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/pz_rg_ret_dev_app_service_plans_01/providers/Microsoft.Web/serverfarms/plan-retail-eastus2-dev-dmz-01",
+        "ase-retail-eastus2-dev-dmz-01-subnetId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/cpn_net_retdev_rg01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_RTL_E2_DEV_ASE_01/subnets/PZ_SNET_DMZ_DEV_ASE_01",
+        "ase-retail-eastus2-dev-int-01-aseId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/cpn_net_retdev_rg01/providers/Microsoft.Web/hostingEnvironments/ase-retail-eastus2-dev-int-01",
+        "ase-retail-eastus2-dev-int-01-aspId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/pz_rg_ret_dev_app_service_plans_01/providers/Microsoft.Web/serverfarms/plan-retail-eastus2-dev-int-01",
+        "ase-retail-eastus2-dev-int-01-subnetId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/cpn_net_retdev_rg01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_RTL_E2_DEV_ASE_01/subnets/PZ_SNET_INT_DEV_ASE_01",
+        "ase-retail-eastus2-prod-dmz-01-aseId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/cpn_net_retail_rg01/providers/Microsoft.Web/hostingEnvironments/ase-retail-eastus2-prod-dmz-01",
+        "ase-retail-eastus2-prod-dmz-01-aspId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/PZ_RG_RET_PROD_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-retail-eastus2-prod-dmz-01",
+        "ase-retail-eastus2-prod-dmz-01-subnetId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/cpn_net_retail_rg01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_RTL_E2_PROD_ASE_01/subnets/PZ_SNET_DMZ_PROD_ASE_01",
+        "ase-retail-eastus2-prod-int-01-aseId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/cpn_net_retail_rg01/providers/Microsoft.Web/hostingEnvironments/ase-retail-eastus2-prod-int-01",
+        "ase-retail-eastus2-prod-int-01-aspId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/PZ_RG_RET_PROD_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-retail-eastus2-prod-int-01",
+        "ase-retail-eastus2-prod-int-01-subnetId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/cpn_net_retail_rg01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_RTL_E2_PROD_ASE_01/subnets/PZ_SNET_INT_PROD_ASE_01",
+        "ase-retail-westus-dev-dmz-01-aseId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/pz_rg_retsol_w_dev_net_01/providers/Microsoft.Web/hostingEnvironments/ase-retail-westus-dev-dmz-01",
+        "ase-retail-westus-dev-dmz-01-aspId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/PZ_RG_RET_DEV_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-retail-westus-dev-dmz-01",
+        "ase-retail-westus-dev-dmz-01-subnetId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/pz_rg_retsol_w_dev_net_01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_RTL_W_DEV_ASE_01/subnets/PZ_SNET_DMZ_DEV_ASE_01",
+        "ase-retail-westus-dev-int-01-aseId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/pz_rg_retsol_w_dev_net_01/providers/Microsoft.Web/hostingEnvironments/ase-retail-westus-dev-int-01",
+        "ase-retail-westus-dev-int-01-aspId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/PZ_RG_RET_DEV_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-retail-westus-dev-int-01",
+        "ase-retail-westus-dev-int-01-subnetId": "/subscriptions/4e0ab1cc-f29f-4628-8f2a-bd2b520ab824/resourceGroups/pz_rg_retsol_w_dev_net_01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_RTL_W_DEV_ASE_01/subnets/PZ_SNET_INT_DEV_ASE_01",
+        "ase-retail-westus-prod-dmz-01-aseId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/pz_rg_retsol_w_prod_net_01/providers/Microsoft.Web/hostingEnvironments/ase-retail-westus-prod-dmz-01",
+        "ase-retail-westus-prod-dmz-01-aspId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/PZ_RG_RET_PROD_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-retail-westus-prod-dmz-01",
+        "ase-retail-westus-prod-dmz-01-subnetId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/pz_rg_retsol_w_prod_net_01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_RTL_W_PROD_ASE_01/subnets/PZ_SNET_DMZ_PROD_ASE_01",
+        "ase-retail-westus-prod-int-01-aseId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/pz_rg_retsol_w_prod_net_01/providers/Microsoft.Web/hostingEnvironments/ase-retail-westus-prod-int-01",
+        "ase-retail-westus-prod-int-01-aspId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/PZ_RG_RET_PROD_APP_SERVICE_PLANS_01/providers/Microsoft.Web/serverFarms/plan-retail-westus-prod-int-01",
+        "ase-retail-westus-prod-int-01-subnetId": "/subscriptions/700a186d-6259-4169-90f8-4263f145e295/resourceGroups/pz_rg_retsol_w_prod_net_01/providers/Microsoft.Network/virtualNetworks/PZ_VNET_RTL_W_PROD_ASE_01/subnets/PZ_SNET_INT_PROD_ASE_01"
+    },
+    "resources": [
+        {
+            "apiVersion": "2020-10-01",
+            "type": "Microsoft.Resources/deployments",
+            "name": "[variables('formattedAppName')]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('appServiceTemplateUrl')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "functionStorageAccountName": {
+                        "value": "[parameters('functionStorageAccountName')]"
+                    },
+                    "appName": {
+                        "value": "[parameters('appName')]"
+                    },
+                    "environment": {
+                        "value": "[parameters('environment')]"
+                    },
+                    "applicationNameTag": {
+                        "value": "[parameters('applicationNameTag')]"
+                    },
+                    "snowRequestTag": {
+                        "value": "[parameters('snowRequestTag')]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "aseId": {
+                        "value": "[variables('aseId')]"
+                    },
+                    "appServicePlanId": {
+                        "value": "[variables('aseAspId')]"
+                    },
+                    "aseNetworkId": {
+                        "value": "[variables('aseNetworkId')]"
+                    },
+                    "aseDomainName": {
+                        "value": "[variables('aseDomain')]"
+                    },
+                    "runtimeStack": {
+                        "value": "[variables('formattedRuntimeStack')]"
+                    },
+                    "createApplicationInsight": {
+                        "value": "[parameters('createApplicationInsight')]"
+                    },
+                    "armTemplateBaseUrl": {
+                        "value": "[variables('armTemplatesBaseUrl')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2020-10-01",
+            "type": "Microsoft.Resources/deployments",
+            "name": "[variables('formattedKeyVaultName')]",
+            "condition": "[equals(parameters('createKeyVault'),'Yes')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments',variables('formattedAppName'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('armTemplatesBaseUrl'),'AppService-KeyVault.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[variables('formattedKeyVaultName')]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "virtualNetworkId": {
+                        "value": "[variables('aseNetworkId')]"
+                    },
+                    "identityObjectId": {
+                        "value": "[reference(variables('formattedAppName')).outputs.managedIdentityPrincipalId.value]"
+                    },
+                    "applicationNameTag": {
+                        "value": "[parameters('applicationNameTag')]"
+                    },
+                    "snowRequestTag": {
+                        "value": "[parameters('snowRequestTag')]"
+                    },
+                    "armTemplateBaseUrl": {
+                        "value": "[variables('armTemplatesBaseUrl')]"
+                    }
+                }
+            }
+        }
+    ]
+}

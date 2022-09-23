@@ -1,0 +1,68 @@
+[
+  {
+    "SubscriptionId": "d2f3bfdb-cf0e-4dab-9a0b-0440cff212b2",
+    "Subscription": "Commercial Prod",
+    "ResourceGroup": "cpn_commercial_asr_prd_rg01",
+    "Name": "cpnsqlbackupprd01"
+  },
+  {
+    "SubscriptionId": "d2f3bfdb-cf0e-4dab-9a0b-0440cff212b2",
+    "Subscription": "Commercial Prod",
+    "ResourceGroup": "PZ_RG_COM_PROD_BACKUP",
+    "Name": "pzpcomdbackup01"
+  },
+  {
+    "SubscriptionId": "08ea3972-3f4a-480b-8dca-5347137a941c",
+    "Subscription": "Corporate Prod",
+    "ResourceGroup": "PZ_RG_CORP_PROD_BACKUP",
+    "Name": "pzpcorpdbackup01"
+  },
+  {
+    "SubscriptionId": "fb9276e4-1f13-46f3-91e1-ab474dc7a5eb",
+    "Subscription": "PowerOps Prod",
+    "ResourceGroup": "PZ_RG_PWROPS_PROD_BACKUP",
+    "Name": "pzppwropsdbackup01"
+  },
+  {
+    "SubscriptionId": "fb9276e4-1f13-46f3-91e1-ab474dc7a5eb",
+    "Subscription": "PowerOps Prod",
+    "ResourceGroup": "PZ_RG_PWROPS_PROD_SQLBACKUPS_01",
+    "Name": "pzppwropssqlbackups02"
+  },
+  {
+    "SubscriptionId": "a2763e41-a587-47a3-a101-4470e647c129",
+    "Subscription": "Retail DMZ Prod",
+    "ResourceGroup": "PZ_RG_RET_PROD_SQLBACKUPS_01",
+    "Name": "pzprdmzsqlbackups01"
+  },
+  {
+    "SubscriptionId": "a2763e41-a587-47a3-a101-4470e647c129",
+    "Subscription": "Retail DMZ Prod",
+    "ResourceGroup": "PZ_RG_RETDMZ_PROD_BACKUP",
+    "Name": "pzpretdmzdbackup01"
+  },
+  {
+    "SubscriptionId": "700a186d-6259-4169-90f8-4263f145e295",
+    "Subscription": "Retail Prod",
+    "ResourceGroup": "PZ_RG_RETAIL_PROD_SQLBACKUPS_01",
+    "Name": "pzpretailsqlbackups01"
+  },
+  {
+    "SubscriptionId": "700a186d-6259-4169-90f8-4263f145e295",
+    "Subscription": "Retail Prod",
+    "ResourceGroup": "PZ_RG_RET_PROD_BACKUP",
+    "Name": "pzpretdbackup01"
+  },
+  {
+    "SubscriptionId": "d4836ef9-5c8b-4966-bd59-434828af78e6",
+    "Subscription": "Shared Services",
+    "ResourceGroup": "PZ_RG_SS_PROD_BACKUP",
+    "Name": "pzpshsdbackup01"
+  },
+  {
+    "SubscriptionId": "97de0298-ca3c-4a78-878f-9f181b482059",
+    "Subscription": "CCA",
+    "ResourceGroup": "PZ_RG_CCA_PROD_SQL_01",
+    "Name": "pzpccadbackups01"
+  }
+]

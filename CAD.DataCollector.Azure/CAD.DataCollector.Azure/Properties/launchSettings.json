@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CAD.DataCollector.Azure": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

@@ -1,0 +1,417 @@
+﻿@page
+@model AzureAutomation.Web.Pages.Admin.EditVmRestartSchedulesModel
+@{
+    ViewData["Title"] = "Edit VM Restart Schedules";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="alert alert-success" id="success-alert" style="display:none"></div>
+<div class="alert alert-danger" id="failed-alert" style="display:none"></div>
+
+<div id="loadingDiv"></div>
+
+<div>
+    <div class="form-row">
+        <div class="form-group col-md-4">
+            <h3 style="margin-top: 2%">Subscription</h3>
+            <select id="subscriptionDropdown" class="form-control" onchange="subscriptionDropdownChanged(this)">
+                <option value="default" selected disabled>Select a subscription...</option>
+                @{
+                    if (Model.Subscriptions.Any()) {
+                        var firstOption = true;
+                        foreach (var subscription in Model.Subscriptions.OrderBy(x => x.Subscription).ToList()) {
+                            if (firstOption) {
+                                <text>
+                                    <option value="@subscription.SubscriptionId" selected>@subscription.Subscription</option>
+                                </text>
+                                firstOption = false;
+                            }
+                            else {
+                                <text>
+                                    <option value="@subscription.SubscriptionId">@subscription.Subscription</option>
+                                </text>
+                            }
+
+                        }
+                    }
+                    else {
+                        <h3 class="text-danger">No subscriptions were found.</h3>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-2">
+            <label for="scheduledDays" style="margin-bottom: 0">Scheduled Days</label>
+            <span style="font-size: small; color: gray">&nbsp;&nbsp;ex. M,T,W,Th,F,Sa,Su</span>
+            <input type="text" class="form-control" id="scheduledDays">
+        </div>
+        <div class="form-group col-md-2">
+            <label for="onTime" style="margin-bottom: 0">On Time (CST)</label>
+            <span style="font-size: small; color: gray">&nbsp;&nbsp;ex. 6 AM</span>
+            <input type="text" class="form-control" id="onTime">
+        </div>
+        <div class="form-group col-md-2">
+            <label for="offTime" style="margin-bottom: 0">Off Time (CST)</label>
+            <span style="font-size: small; color: gray">&nbsp;&nbsp;ex. 8 PM</span>
+            <input type="text" class="form-control" id="offTime">
+        </div>
+        <div class="form-group mt-auto">
+            <button type="submit" id="saveScheduleButton" class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
+        </div>
+        <div class="form-group mt-auto">
+            <button type="submit" id="deleteScheduleButton" class="btn btn-danger" onclick="deleteSchedule()" style="margin-left: 2%; width: 100%">Delete Schedule</button>
+        </div>
+    </div>
+    @*<div>
+        <label id="rowsSelectedLabel">0 row(s) selected</label>
+    </div>*@
+</div>
+<div style="padding-top: 1%">
+    <table id="vmTable" class="table table-hover table-sm" style="min-width: 1100px">
+        <thead>
+        <tr>
+            <th style="width: 10px"></th>
+            <th scope="col">Resource Group</th>
+            <th scope="col">Server Name</th>
+            <th scope="col">Days</th>
+            <th scope="col">On Time (CST)</th>
+            <th scope="col">Off TIme (CST)</th>
+        </tr>
+        <tr>
+            <th></th>
+            <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search resource group"/></th>
+            <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search server name"/></th>
+            <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search days"/></th>
+            <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search on time"/></th>
+            <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search off time"/></th>
+        </tr>
+        </thead>
+        <tbody id="table_body"></tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        var subscriptionDropdownChanged = function(dropdown) {
+            refreshTable(dropdown.value);
+        }
+
+        var refreshTable = function(subscriptionId) {
+            $('#loadingDiv').addClass('loading');
+            $('#vmTable').DataTable().ajax.url("/?handler=Vms&subscriptionId=" + subscriptionId).load();
+        }
+
+        var saveSchedule = function() {
+            $('#loadingDiv').addClass('loading');
+            $('#saveScheduleButton').prop('disabled', 'disabled');
+            $('#deleteScheduleButton').prop('disabled', 'disabled');
+            $('#saveScheduleButton').text("Updating schedule...");
+            $('#subscriptionDropdown').prop('disabled', 'disabled');
+
+            var vms = [];
+            var subscriptionId = $('#subscriptionDropdown option:selected').val();
+            //var subscriptionName = $('#subscriptionDropdown option:selected').text();
+            var scheduledDays = $('#scheduledDays').val();
+            var scheduledStartTime = $('#onTime').val();
+            var scheduledStopTime = $('#offTime').val();
+
+            $.each($('#vmTable').DataTable().rows('.selected')[0],
+                function(key, value) {
+                    var resourceGroup = $('#vmTable').DataTable().row(value).data().ResourceGroup;
+                    var vmName = $('#vmTable').DataTable().row(value).data().Name;
+                    vms.push(
+                        {
+                            SubscriptionId: subscriptionId,
+                            //SubscriptionName: subscriptionName,
+                            ResourceGroup: resourceGroup,
+                            Name: vmName,
+                            Schedule: {
+                                Days: scheduledDays,
+                                StartTime: scheduledStartTime,
+                                StopTime: scheduledStopTime
+                            }
+                        });
+                });
+
+            $.ajax({
+                type: 'POST',
+                url: '/Admin/EditVmRestartSchedules?handler=Update',
+                headers: {
+                    "RequestVerificationToken": $('input:hidden[name="__RequestVerificationToken"]').val()
+                },
+                contentType: "application/json",
+                data: JSON.stringify(vms),
+                success: function(message, textStatus, jQxhr) {
+                    //display success alert
+                    $("#success-alert").html('<strong>Success! </strong>' + message);
+                    $("#success-alert").fadeTo(5000, 500).slideUp(500);
+
+                    //update table
+                    refreshTable($('#subscriptionDropdown').val());
+
+                    $('#saveScheduleButton').text("Update schedule");
+                    $('#saveScheduleButton').prop('disabled', '');
+                    $('#deleteScheduleButton').prop('disabled', '');
+                    $('#subscriptionDropdown').prop('disabled', '');
+                    $('#loadingDiv').removeClass('loading');
+                },
+                error: function(jqxhr, textStatus, error) {
+                    //display success alert
+                    $("#failed-alert").html('<strong>Failed! </strong>' + textStatus + ": " + error);
+                    $("#failed-alert").fadeTo(5000, 500).slideUp(500);
+
+                    var err = textStatus + ", " + error;
+                    console.log("Request Failed: " + err);
+
+                    $('#saveScheduleButton').text("Update schedule");
+                    $('#saveScheduleButton').prop('disabled', '');
+                    $('#deleteScheduleButton').prop('disabled', '');
+                    $('#subscriptionDropdown').prop('disabled', '');
+                    $('#loadingDiv').removeClass('loading');
+                }
+            });
+        }
+
+        var deleteSchedule = function() {
+            $('#loadingDiv').addClass('loading');
+            $('#saveScheduleButton').prop('disabled', 'disabled');
+            $('#deleteScheduleButton').prop('disabled', 'disabled');
+            $('#deleteScheduleButton').text("Deleting schedule...");
+            $('#subscriptionDropdown').prop('disabled', 'disabled');
+
+            var vms = [];
+            var subscriptionId = $('#subscriptionDropdown option:selected').val();
+
+            $.each($('#vmTable').DataTable().rows('.selected')[0],
+                function(key, value) {
+                    var resourceGroup = $('#vmTable').DataTable().row(value).data().ResourceGroup;
+                    var vmName = $('#vmTable').DataTable().row(value).data().Name;
+                    vms.push(
+                        {
+                            SubscriptionId: subscriptionId,
+                            ResourceGroup: resourceGroup,
+                            Name: vmName
+                        });
+                });
+
+            $.ajax({
+                type: 'POST',
+                url: '/Admin/EditVmRestartSchedules?handler=Delete',
+                headers: {
+                    "RequestVerificationToken": $('input:hidden[name="__RequestVerificationToken"]').val()
+                },
+                contentType: "application/json",
+                data: JSON.stringify(vms),
+                success: function(message, textStatus, jQxhr) {
+                    //display success alert
+                    $("#success-alert").html('<strong>Success! </strong>' + message);
+                    $("#success-alert").fadeTo(5000, 500).slideUp(500);
+
+                    //update table
+                    refreshTable($('#subscriptionDropdown').val());
+
+                    $('#saveScheduleButton').prop('disabled', '');
+                    $('#deleteScheduleButton').text("Delete schedule");
+                    $('#deleteScheduleButton').prop('disabled', '');
+                    $('#subscriptionDropdown').prop('disabled', '');
+                    $('#loadingDiv').removeClass('loading');
+                },
+                error: function(jqxhr, textStatus, error) {
+                    //display success alert
+                    $("#failed-alert").html('<strong>Failed! </strong>' + textStatus + ": " + error);
+                    $("#failed-alert").fadeTo(5000, 500).slideUp(500);
+
+                    var err = textStatus + ", " + error;
+                    console.log("Request Failed: " + err);
+
+                    $('#saveScheduleButton').prop('disabled', '');
+                    $('#deleteScheduleButton').text("Delete schedule");
+                    $('#deleteScheduleButton').prop('disabled', '');
+                    $('#subscriptionDropdown').prop('disabled', '');
+                    $('#loadingDiv').removeClass('loading');
+                }
+            });
+        }
+
+        $(window).on('load',
+            (function() {
+                $('#loadingDiv').addClass('loading');
+                var subscriptionId = $('#subscriptionDropdown').val();
+
+                var datatable = $('#vmTable').DataTable({
+                    paging: false,
+                    scrollY: '47vh',
+                    scrollCollapse: true,
+                    //force sort icons to top header row
+                    bSortCellsTop: true,
+                    //add extract buttons
+                    dom: 'Bfrtip',
+                    buttons: [
+                        {
+                            text: 'Select All',
+                            className: 'btn btn-info',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                datatable.rows({ search: 'applied' }).select();
+                            }
+                        },
+                        {
+                            text: 'Unselect All',
+                            className: 'btn btn-info',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                datatable.rows({ search: 'applied' }).deselect();
+                            }
+                        },
+                        {
+                            text: 'Clear Filters',
+                            className: 'btn btn-danger',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                $('table thead tr input').each(function() { $(this).val("") });
+                                datatable.search('').columns().search('').draw();
+                            }
+                        }
+                    ],
+                    ajax: {
+                        url: "/?handler=Vms&subscriptionId=" + subscriptionId
+                    },
+                    columns: [
+                        {
+                            data: null,
+                            defaultContent: ''
+                        },
+                        { data: 'ResourceGroup' },
+                        { data: 'Name' },
+                        { data: 'Schedule.Days' },
+                        { data: 'Schedule.StartTime' },
+                        { data: 'Schedule.StopTime' }
+                    ],
+                    columnDefs: [
+                        {
+                            targets: 0,
+                            searchable: false,
+                            orderable: false,
+                            className: 'select-checkbox'
+                        }
+                    ],
+                    select: {
+                        style: 'multi+shift'
+                    },
+                    order: [[1, 'asc'], [2, 'asc']],
+                    drawCallback: function(settings) {
+                        $('#loadingDiv').removeClass('loading');
+                    },
+                    initComplete: function(settings, json) {
+                        //enable searching listeners
+                        datatable.columns().eq(0).each(function(colIdx) {
+                            $('input',
+                                $(datatable.column(0).header().closest('tr')).closest('thead').find('tr').eq(1)
+                                .find('th')[colIdx]).on(
+                                'keyup change',
+                                function() {
+                                    datatable.column(colIdx).search(this.value).draw();
+                                });
+                        });
+
+                        datatable.on('select',
+                            function(e, dt, type, indexes) {
+                                if (type === 'row') {
+                                    selectRow(this);
+                                }
+                            });
+
+                        datatable.on('deselect',
+                            function(e, dt, type, indexes) {
+                                if (type === 'row') {
+                                    selectRow(this);
+                                }
+                            });
+                    }
+                });
+
+                var updateScheduledDaysInput = function() {
+                    var inputValue = "";
+                    $.each(datatable.rows('.selected')[0],
+                        function(key, value) {
+                            var cellValue = datatable.row(value).data().Schedule.Days;
+
+                            if (cellValue) {
+                                if (!inputValue) {
+                                    inputValue = cellValue;
+                                } else if (inputValue !== cellValue) {
+                                    inputValue = "";
+                                    return false;
+                                }
+                            }
+                            return true;
+                        });
+
+                    $('#scheduledDays').val(inputValue);
+                };
+
+                var updateOnTimeInput = function() {
+                    var inputValue = "";
+                    $.each(datatable.rows('.selected')[0],
+                        function(key, value) {
+                            var cellValue = datatable.row(value).data().Schedule.StartTime;
+
+                            if (cellValue) {
+                                if (!inputValue) {
+                                    inputValue = cellValue;
+                                } else if (inputValue !== cellValue) {
+                                    inputValue = "";
+                                    return false;
+                                }
+                            }
+                            return true;
+                        });
+
+                    $('#onTime').val(inputValue);
+                };
+
+                var updateOffTimeInput = function() {
+                    var inputValue = "";
+                    $.each(datatable.rows('.selected')[0],
+                        function(key, value) {
+                            var cellValue = datatable.row(value).data().Schedule.StopTime;
+
+                            if (cellValue) {
+                                if (!inputValue) {
+                                    inputValue = cellValue;
+                                } else if (inputValue !== cellValue) {
+                                    inputValue = "";
+                                    return false;
+                                }
+                            }
+                            return true;
+                        });
+
+                    $('#offTime').val(inputValue);
+                };
+
+                var selectRow = function(row) {
+                    $(row).toggleClass('selected');
+
+                    updateScheduledDaysInput();
+                    updateOnTimeInput();
+                    updateOffTimeInput();
+
+                    var numberOfRowsSelected = datatable.rows('.selected').data().length;
+                    //$('#rowsSelectedLabel').text(numberOfRowsSelected + ' row(s) selected');
+                }
+            }));
+    </script>
+}

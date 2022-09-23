@@ -1,0 +1,85 @@
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService Authorization
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Azure Dashboard</title>
+
+    <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css">
+    <link rel="stylesheet" type="text/css" href="~/css/fontawesome-all.min.css" asp-append-version="true" />
+    
+    @*<link rel="stylesheet" type="text/css" href="~/css/datatables.editor.bootstrap.min.css" asp-append-version="true" />*@
+    <environment include="Development">
+        <link rel="stylesheet" type="text/css" href="~/css/datatables.css" asp-append-version="true" />
+        <link rel="stylesheet" type="text/css" href="~/css/site.css" asp-append-version="true" />
+    </environment>
+    <environment exclude="Development">
+        <link rel="stylesheet" type="text/css" href="~/css/datatables.min.css" asp-append-version="true" />
+        <link rel="stylesheet" type="text/css" href="~/css/site.min.css" asp-append-version="true" />
+    </environment>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+        <a asp-page="/RestartVms" class="navbar-brand" style="margin-right: 2em">Azure Dashboard</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-collapse collapse" id="navbarSupportedContent">
+            @*<p class="nav navbar-text">Hello, @User.Identity.Name!</p>*@
+            <div class="navbar-nav">
+                <a class="nav-item nav-link @(ViewData["Title"].ToString() == "Restart VMs" ? "active" : "")" href="/RestartVms">Restart VMs</a>
+                @*@if (Authorization.AuthorizeAsync(User, AdminAuthorizationPolicy.Name).Result.Succeeded)*@
+                @if(User.HasClaim(ClaimTypes.Role, "DevOpsAdmin"))
+                {
+                    @*<a class="nav-item nav-link disabled">|</a>
+                    <a class="nav-item nav-link @(ViewData["Title"].ToString() == "Edit VM Restart Schedules" ? "active" : "")" href="/Admin/EditVmRestartSchedules">Edit VM Restart Schedule</a>*@
+                    <a class="nav-item nav-link disabled">|</a>
+                    <a class="nav-item nav-link @(ViewData["Title"].ToString() == "Edit VM Restart Permissions" ? "active" : "")" href="/Admin/EditVmRestartPermissions">Edit VM Restart Permissions</a>
+                    <a class="nav-item nav-link disabled">|</a>
+                    <a class="nav-item nav-link @(ViewData["Title"].ToString() == "Edit Ping Mapping Alerts" ? "active" : "")" href="/Admin/EditPingMappingAlerts">Edit Ping Alerts</a>
+                    <a class="nav-item nav-link disabled">|</a>
+                    <a class="nav-item nav-link @(ViewData["Title"].ToString() == "Edit Windows Service Mapping Alerts" ? "active" : "")" href="/Admin/EditWindowsServiceMappingAlerts">Edit Windows Service Alerts</a>
+                }
+            </div>
+            <div class="navbar-nav ml-auto">
+                @if (User.Identity.IsAuthenticated)
+                {
+                    @*<span class="navbar-text">@User.Claims.FirstOrDefault(x => x.Type.Equals("name", StringComparison.OrdinalIgnoreCase))?.Value&nbsp;&nbsp;&nbsp;</span>*@
+                    <span class="navbar-text">@User.Identity.Name</span>
+                    <a class="nav-item nav-link" asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut">Sign out</a>
+                }
+                else
+                {
+                    <a class="nav-item nav-link" asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignIn">Sign in</a>
+                }
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="body-content">
+    @RenderBody()
+</div>
+<footer class="footer text-center">
+    <span class="text-muted">&copy; @DateTime.Now.Year - Calpine Corporation</span>
+</footer>
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+<environment include="Development">
+    <script type="text/javascript" src="~/js/datatables.js"></script>
+</environment>
+<environment exclude="Development">
+    <script type="text/javascript" src="~/js/datatables.min.js"></script>
+</environment>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+@RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,59 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	  "contentVersion": "1.0.0.0",
+	  "parameters": {
+        "subscription": {
+            "type": "string",
+            "metadata": {
+                "description": "The Azure subscription the VM is deployed to."
+            }
+        },
+        "timezone": {
+            "type": "string",
+            "metadata": {
+                "description": "The timezone to set the VM to."
+            }
+        },
+        "vmName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the VM to run the post-deployment script."
+            }
+        },
+        "domainToJoinTo": {
+            "type": "string",
+            "defaultValue": "na.calpine.com",
+            "metadata": {
+                "description": "Name of the domain the domain will be joined to."
+            }
+        }
+    },
+    "variables": {
+        "scriptUrl": "http://download.calpine.com",
+        "postDeploymentScriptName": "Windows-SchedulePostDeploymentScript.ps1",
+        "postDeploymentScriptUrl": "[concat('http://download.calpine.com/devops/scripts/',variables('postDeploymentScriptName'))]",
+        "postDeploymentScriptCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ',variables('postDeploymentScriptName'),' -Subscription \"', parameters('subscription'), '\" -Timezone \"', parameters('timezone'), '\" -Domain \"', parameters('domainToJoinTo'), '\"')]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(parameters('vmName'),'/',variables('postDeploymentScriptName'))]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.9",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": [
+                        "[variables('postDeploymentScriptUrl')]"
+                    ]
+                },
+                "protectedSettings": {
+                  "commandToExecute": "[variables('postDeploymentScriptCommand')]"
+                }
+            }
+        }
+    ]
+}

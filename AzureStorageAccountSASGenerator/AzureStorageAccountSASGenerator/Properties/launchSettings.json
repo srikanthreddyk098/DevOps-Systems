@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "AzureStorageAccountSASGenerator": {
+      "commandName": "Project",
+      "commandLineArgs": "\"pzpcomdbackup01\" \"test\""
+    }
+  }
+}

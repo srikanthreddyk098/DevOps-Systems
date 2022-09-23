@@ -1,0 +1,47 @@
+﻿@using System.Configuration
+@model IEnumerable<ReportsViewModel>
+@{
+    Layout = null;
+
+    var classNames = "panel panel-default dropdown";
+
+    var homeGroupId = ConfigurationManager.AppSettings["powerbi:HomeGroupId"];
+    var currentGroupId = Request.QueryString["groupId"];
+    if (!string.IsNullOrEmpty(currentGroupId) && !currentGroupId.Equals(homeGroupId)) {
+        classNames += " active";
+    }
+}
+
+<li class="@classNames">
+    <a data-toggle="collapse" href="#reports-nav" style="font-size:1.1em">
+        <span class="icon fa fa-line-chart"></span><span class="title">Insights</span>
+    </a>
+    <!-- Dropdown level 1 -->
+    <div id="reports-nav" class="panel-collapse collapse">
+        <div class="panel-body">
+            <ul class="nav navbar-nav">
+                @foreach (var reports in Model) {
+                    if (!reports.GroupId.Equals(homeGroupId)) {
+                        foreach (var report in reports.Reports) {
+                            string reportId = Request.QueryString["reportId"];
+                            string reportClass = "";
+                            if (!string.IsNullOrEmpty(reportId)) {
+                                reportClass = reportId.Equals(report.Id) ? "active" : "";
+                            }
+                            <li class="@reportClass">
+                                @Html.ActionLink(report.Name, "Report", new
+                                {
+                                    groupId = reports.GroupId,
+                                    reportId = report.Id,
+                                    reportName = report.Name,
+                                    datasetId = report.DatasetId,
+                                    embedUrl = report.EmbedUrl
+                                }, new { style = "height:36px; line-height:36px; font-size:1.05em" })
+                            </li>
+                        }
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+</li>

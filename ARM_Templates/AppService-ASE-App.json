@@ -1,0 +1,268 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+        "appName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the app. Note: This will be in the url."
+            }
+        },
+        "environment": {
+            "allowedValues": [
+                "dev",
+                "test",
+                "uat",
+                "prod"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "The environment for the app."
+            }
+        },
+        "applicationNameTag": {
+            "type": "string",
+            "metadata": {
+                "description": "The value to assign to the Application_Name tag."
+            }
+        },
+        "snowRequestTag": {
+            "type": "string",
+            "metadata": {
+                "description": "The value to assign to the SNOW_Request tag."
+            }
+        },
+        "location": {
+          "type": "string",
+          "defaultValue": "[resourceGroup().location]",
+          "metadata": {
+            "description": "The location in which the resources should be deployed."
+          }
+        },
+        "aseId": {
+            "type": "string",
+            "metadata": {
+                "description": "The ASE resource ID."
+            }
+        },
+        "appServicePlanId": {
+            "type": "string",
+            "metadata": {
+                "description": "The app service plan resource id."
+            }
+        },
+        "aseNetworkId": {
+            "type": "string",
+            "metadata": {
+                "description": "The network ID of the ASE."
+            }
+        },
+        "aseDomainName": {
+            "type": "string",
+            "metadata": {
+                "description": "The domain name of the ASE."
+            }
+        },
+        "runtimeStack": {
+            "allowedValues": [
+                "dotnetcore",
+                "dotnet"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "The stack used by the app (e.g. dotnetcore, dotnet)."
+            }
+        },
+        "createApplicationInsight": {
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "If yes, an application insights will be created and connected to the app service."
+            }
+        },
+        "armTemplateBaseUrl": {
+            "type": "string",
+            "defaultValue": "https://cpndeploy.blob.core.windows.net/arm-templates/",
+            "allowedValues": [
+                "https://cpndeploy.blob.core.windows.net/arm-templates/",
+                "https://cpndeploy.blob.core.windows.net/arm-templates/test/"
+            ],
+            "metadata": {
+                "description": "Url of the storage account container containing the arm templates to use."
+            }
+        },
+        "functionStorageAccountName":{            
+            "type": "string",
+            "defaultValue": "default",
+            "description": "Not used. Ignore."
+        }
+    },
+    "variables": {
+        "formattedAppName": "[concat(replace(parameters('appName'),' ',''),if(equals(parameters('environment'),'prod'),'',concat('-',parameters('environment'))))]",
+        "appInsightsName": "[concat('appi-',replace(parameters('appName'),' ',''),'-',parameters('environment'))]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2020-09-01",
+            "type": "Microsoft.Web/sites",
+            "name": "[variables('formattedAppName')]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "Application_Name": "[parameters('applicationNameTag')]",
+                "SNOW_Request": "[parameters('snowRequestTag')]"
+            },
+            "kind": "app",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(variables('formattedAppName'),'.',parameters('aseDomainName'))]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(variables('formattedAppName'),'.scm.',parameters('aseDomainName'))]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[parameters('appServicePlanId')]",
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {
+                    "numberOfWorkers": 1,
+                    "defaultDocuments": [
+                        "Default.htm",
+                        "Default.html",
+                        "Default.asp",
+                        "index.htm",
+                        "index.html",
+                        "iisstart.htm",
+                        "default.aspx",
+                        "index.php",
+                        "hostingstart.html"
+                    ],
+                    "netFrameworkVersion": "v4.0",
+                    "phpVersion": "5.6",
+                    "requestTracingEnabled": false,
+                    "remoteDebuggingEnabled": false,
+                    "remoteDebuggingVersion": "VS2019",
+                    "httpLoggingEnabled": false,
+                    "logsDirectorySizeLimit": 35,
+                    "detailedErrorLoggingEnabled": false,
+                    "publishingUsername": "[concat('$',variables('formattedAppName'))]",
+                    "azureStorageAccounts": {},
+                    "scmType": "VSTSRM",
+                    "use32BitWorkerProcess": true,
+                    "webSocketsEnabled": false,
+                    "alwaysOn": true,
+                    "managedPipelineMode": "Integrated",
+                    "virtualApplications": [
+                        {
+                            "virtualPath": "/",
+                            "physicalPath": "site\\wwwroot",
+                            "preloadEnabled": true
+                        }
+                    ],
+                    "loadBalancing": "LeastRequests",
+                    "experiments": {
+                        "rampUpRules": []
+                    },
+                    "autoHealEnabled": false,
+                    "localMySqlEnabled": false,
+                    "managedServiceIdentityId": 5,
+                    "ipSecurityRestrictions": [
+                        {
+                            "ipAddress": "Any",
+                            "action": "Allow",
+                            "priority": 1,
+                            "name": "Allow all",
+                            "description": "Allow all access"
+                        }
+                    ],
+                    "scmIpSecurityRestrictions": [
+                        {
+                            "ipAddress": "Any",
+                            "action": "Allow",
+                            "priority": 1,
+                            "name": "Allow all",
+                            "description": "Allow all access"
+                        }
+                    ],
+                    "scmIpSecurityRestrictionsUseMain": false,
+                    "http20Enabled": true,
+                    "minTlsVersion": "1.2",
+                    "ftpsState": "FtpsOnly",
+                    "metadata": [
+                        {
+                            "name": "CURRENT_STACK",
+                            "value": "[parameters('runtimeStack')]"
+                        }
+                    ]
+                },
+                "scmSiteAlsoStopped": false,
+                "hostingEnvironmentProfile": {
+                    "id": "[parameters('aseId')]"
+                },
+                "clientAffinityEnabled": true,
+                "clientCertEnabled": false,
+                "hostNamesDisabled": false,
+                "containerSize": 0,
+                "dailyMemoryTimeQuota": 0,
+                "httpsOnly": true,
+                "redundancyMode": "None"
+            }
+        },
+        {
+            "apiVersion": "2020-02-02-preview",
+            "type": "Microsoft.Insights/components",
+            "name": "[variables('appInsightsName')]",
+            "condition": "[equals(parameters('createApplicationInsight'),'Yes')]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "Application_Name": "[parameters('applicationNameTag')]",
+                "SNOW_Request": "[parameters('snowRequestTag')]"
+            },
+            "kind": "web",
+            "properties": {
+                "Application_Type": "web"
+            }
+        },
+        {
+            "apiVersion": "2020-09-01",
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('formattedAppName'),'/appsettings')]",
+            "condition": "[equals(parameters('createApplicationInsight'),'Yes')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites',variables('formattedAppName'))]",
+                "[resourceId('Microsoft.Insights/components/',variables('appInsightsName'))]"
+            ],
+            "properties": {
+                "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('Microsoft.Insights/components/',variables('appInsightsName'))).InstrumentationKey]",
+                "APPINSIGHTS_PROFILERFEATURE_VERSION": "1.0.0",
+                "APPINSIGHTS_SNAPSHOTFEATURE_VERSION": "1.0.0",
+                "APPLICATIONINSIGHTS_CONNECTION_STRING": "[concat('InstrumentationKey=',reference(concat('Microsoft.Insights/components/',variables('appInsightsName'))).InstrumentationKey,';IngestionEndpoint=https://westus-0.in.applicationinsights.azure.com/')]",
+                "ApplicationInsightsAgent_EXTENSION_VERSION": "~2",
+                "DiagnosticServices_EXTENSION_VERSION": "~3",
+                "InstrumentationEngine_EXTENSION_VERSION": "disabled",
+                "SnapshotDebugger_EXTENSION_VERSION": "disabled",
+                "XDT_MicrosoftApplicationInsights_BaseExtensions": "disabled",
+                "XDT_MicrosoftApplicationInsights_Mode": "recommended",
+                "XDT_MicrosoftApplicationInsights_PreemptSdk": "disabled"
+            }
+        }
+    ],
+    "outputs": {
+        "managedIdentityPrincipalId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Web/sites',variables('formattedAppName')),'2019-08-01','full').identity.principalId]"
+        }
+    }
+}

@@ -1,0 +1,16 @@
+﻿@{
+    ViewBag.Title = "Error";
+}
+
+<div class="text-center">
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <h1 class="text-danger">@TempData["ErrorMessage"].ToString()</h1>
+    }
+    else
+    {
+        <h1 class="text-danger">Oops. Looks like an error has occurred...</h1>
+        <h2 class="text-danger">Please try to access your report again.</h2>
+        <h2 class="text-danger">If the error persists, contacts <a href="mailto:devops@calpine.com?subject=Calpine%20Azure%20Dashboard%20error%20occurred">DevOps</a> for support.</h2>
+    }
+</div>

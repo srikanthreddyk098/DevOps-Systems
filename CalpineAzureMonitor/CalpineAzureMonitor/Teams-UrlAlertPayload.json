@@ -1,0 +1,25 @@
+{
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Url Alert",
+    "sections": [{
+        "activityTitle": "%Title%",
+        "activitySubtitle": "",
+        "facts": [{
+            "name": "Url",
+            "value": "%Url%"
+        }, {
+            "name": "Message",
+            "value": "%Message%"
+        }],
+        "markdown": true
+    }],
+    "potentialAction": [{
+        "@type": "OpenUri",
+        "name": "Url Mapping",
+        "targets": [
+            { "os": "default", "uri": "https://apps.powerapps.com/play/15b82756-2e08-47ea-8287-4d91d3c5190f?tenantId=7406f7f1-ef6e-49f3-a9c0-002b8bc12056&search=%Computer%" }
+        ]
+    }]
+}

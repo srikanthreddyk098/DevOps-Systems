@@ -1,0 +1,25 @@
+{
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Windows Service Alert",
+    "sections": [{
+        "activityTitle": "%Title%",
+        "activitySubtitle": "",
+        "facts": [{
+            "name": "Computer",
+            "value": "%Computer%"
+        }, {
+            "name": "Message",
+            "value": "%Message%"
+        }],
+        "markdown": true
+    }],
+    "potentialAction": [{
+        "@type": "OpenUri",
+        "name": "Windows Service Mapping",
+        "targets": [
+            { "os": "default", "uri": "https://apps.powerapps.com/play/9d8b00f6-4dd1-4b5c-a39a-c0feb48de27a?tenantId=7406f7f1-ef6e-49f3-a9c0-002b8bc12056&search=%Computer%" }
+        ]
+    }]
+}

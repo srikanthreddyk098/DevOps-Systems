@@ -1,0 +1,85 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.452
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalpineAzureDashboard.DataCollector", "CalpineAzureDashboard.DataCollector\CalpineAzureDashboard.DataCollector.csproj", "{8DEE7BF3-437A-4284-AB6E-950D84D67F85}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalpineAzureDashboard.Azure", "CalpineAzureDashboard.Azure\CalpineAzureDashboard.Azure.csproj", "{C6C3F04D-58AA-4DBC-B621-D0DF35D3D38E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalpineAzureDashboard.Data", "CalpineAzureDashboard.Data\CalpineAzureDashboard.Data.csproj", "{4192A7CF-19FA-4451-92E1-5579A67AFDCD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalpineAzureDashboard.Models", "CalpineAzureDashboard.Models\CalpineAzureDashboard.Models.csproj", "{05EBFF57-7CB6-49E2-B7BC-6B566C4EE48E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalpineAzureDashboard.DataCollector.StorageAccountSize", "CalpineAzureDashboard.DataCollector.StorageAccountSize\CalpineAzureDashboard.DataCollector.StorageAccountSize.csproj", "{927F00C7-90E9-447E-991F-2F44A9153AA1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalpineAzureDashboard.DataCollector.DatabaseBackup", "CalpineAzureDashboard.DataCollector.DatabaseBackup\CalpineAzureDashboard.DataCollector.DatabaseBackup.csproj", "{F57D8C94-1900-431A-BEE6-39FC4343F014}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalpineAzureDashboard.Service", "CalpineAzureDashboard.Service\CalpineAzureDashboard.Service.csproj", "{A0A01D1F-D378-4C81-9CA0-6A4BE5209E03}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalpineAzureDashboard.DataCollector.LogAnalytics", "CalpineAzureDashboard.DataCollector.LogAnalytics\CalpineAzureDashboard.DataCollector.LogAnalytics.csproj", "{B15403FB-28D5-4AD9-B662-369872BB4FE4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		QA|Any CPU = QA|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8DEE7BF3-437A-4284-AB6E-950D84D67F85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DEE7BF3-437A-4284-AB6E-950D84D67F85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DEE7BF3-437A-4284-AB6E-950D84D67F85}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{8DEE7BF3-437A-4284-AB6E-950D84D67F85}.QA|Any CPU.Build.0 = Release|Any CPU
+		{8DEE7BF3-437A-4284-AB6E-950D84D67F85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DEE7BF3-437A-4284-AB6E-950D84D67F85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6C3F04D-58AA-4DBC-B621-D0DF35D3D38E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6C3F04D-58AA-4DBC-B621-D0DF35D3D38E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6C3F04D-58AA-4DBC-B621-D0DF35D3D38E}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{C6C3F04D-58AA-4DBC-B621-D0DF35D3D38E}.QA|Any CPU.Build.0 = Release|Any CPU
+		{C6C3F04D-58AA-4DBC-B621-D0DF35D3D38E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6C3F04D-58AA-4DBC-B621-D0DF35D3D38E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4192A7CF-19FA-4451-92E1-5579A67AFDCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4192A7CF-19FA-4451-92E1-5579A67AFDCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4192A7CF-19FA-4451-92E1-5579A67AFDCD}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{4192A7CF-19FA-4451-92E1-5579A67AFDCD}.QA|Any CPU.Build.0 = Release|Any CPU
+		{4192A7CF-19FA-4451-92E1-5579A67AFDCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4192A7CF-19FA-4451-92E1-5579A67AFDCD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05EBFF57-7CB6-49E2-B7BC-6B566C4EE48E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05EBFF57-7CB6-49E2-B7BC-6B566C4EE48E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05EBFF57-7CB6-49E2-B7BC-6B566C4EE48E}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{05EBFF57-7CB6-49E2-B7BC-6B566C4EE48E}.QA|Any CPU.Build.0 = Release|Any CPU
+		{05EBFF57-7CB6-49E2-B7BC-6B566C4EE48E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05EBFF57-7CB6-49E2-B7BC-6B566C4EE48E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{927F00C7-90E9-447E-991F-2F44A9153AA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{927F00C7-90E9-447E-991F-2F44A9153AA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{927F00C7-90E9-447E-991F-2F44A9153AA1}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{927F00C7-90E9-447E-991F-2F44A9153AA1}.QA|Any CPU.Build.0 = Release|Any CPU
+		{927F00C7-90E9-447E-991F-2F44A9153AA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{927F00C7-90E9-447E-991F-2F44A9153AA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F57D8C94-1900-431A-BEE6-39FC4343F014}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F57D8C94-1900-431A-BEE6-39FC4343F014}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F57D8C94-1900-431A-BEE6-39FC4343F014}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{F57D8C94-1900-431A-BEE6-39FC4343F014}.QA|Any CPU.Build.0 = Release|Any CPU
+		{F57D8C94-1900-431A-BEE6-39FC4343F014}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F57D8C94-1900-431A-BEE6-39FC4343F014}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0A01D1F-D378-4C81-9CA0-6A4BE5209E03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0A01D1F-D378-4C81-9CA0-6A4BE5209E03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0A01D1F-D378-4C81-9CA0-6A4BE5209E03}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{A0A01D1F-D378-4C81-9CA0-6A4BE5209E03}.QA|Any CPU.Build.0 = Release|Any CPU
+		{A0A01D1F-D378-4C81-9CA0-6A4BE5209E03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0A01D1F-D378-4C81-9CA0-6A4BE5209E03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B15403FB-28D5-4AD9-B662-369872BB4FE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B15403FB-28D5-4AD9-B662-369872BB4FE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B15403FB-28D5-4AD9-B662-369872BB4FE4}.QA|Any CPU.ActiveCfg = Release|Any CPU
+		{B15403FB-28D5-4AD9-B662-369872BB4FE4}.QA|Any CPU.Build.0 = Release|Any CPU
+		{B15403FB-28D5-4AD9-B662-369872BB4FE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B15403FB-28D5-4AD9-B662-369872BB4FE4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		EnterpriseLibraryConfigurationToolBinariesPathV6 = packages\EnterpriseLibrary.TransientFaultHandling.6.0.1304.0\lib\portable-net45+win+wp8;packages\EnterpriseLibrary.TransientFaultHandling.Data.6.0.1304.1\lib\NET45
+		SolutionGuid = {C87022C9-1E0E-481A-92D7-85DE2BA556F7}
+	EndGlobalSection
+EndGlobal

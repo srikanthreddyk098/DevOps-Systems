@@ -1,0 +1,437 @@
+﻿@page
+@model RestartVmsModel
+@{
+    ViewData["Title"] = "Restart VMs";
+}
+
+<div id="loadingDiv"></div>
+
+@if (!Model.Subscriptions.Any())
+{
+    <div class="container text-center text-danger">
+        <h3>You do not have permissions to start/stop any servers.</h3>
+        <h3><a href="mailto:devops@calpine.com?subject=Access request for AzureAutomation&body=@User.Identity.Name would like access to the following servers:%0D">Click here</a> to send an email request.</h3>
+        <h3>Please include the name of the servers you would like access to.</h3>
+    </div>
+}
+else
+{
+    <form class="form-row">
+        <div class="form-group col-md-4">
+            <h3 style="margin-top: 2%">Subscription</h3>
+            <select id="subscriptionDropdown" class="form-control" onchange="subscriptionDropdownChanged(this)">
+                <option value="default" selected disabled>Select a subscription...</option>
+                @{
+                    if (Model.Subscriptions.Any())
+                    {
+                        var firstOption = true;
+                        foreach (var subscription in Model.Subscriptions.OrderBy(x => x.Subscription).ToList())
+                        {
+                            if (firstOption)
+                            {
+                                <text>
+                                    <option value="@subscription.SubscriptionId" selected>@subscription.Subscription</option>
+                                </text>
+                                firstOption = false;
+                            }
+                            else
+                            {
+                                <text>
+                                    <option value="@subscription.SubscriptionId">@subscription.Subscription</option>
+                                </text>
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        <h3 class="text-danger">No subscriptions were found.</h3>
+                    }
+                }
+            </select>
+        </div>
+    </form>
+    <div style="padding-top: 1%">
+        <table id="vmTable" class="table table-hover table-sm" style="min-width: 1100px;">
+            <thead>
+                <tr>
+                    <th scope="col">Resource Group</th>
+                    <th scope="col">Server Name</th>
+                    @*<th scope="col">Weekly Cost</th>
+                    <th scope="col">Weekly Savings</th>
+                    <th scope="col">On/Off Schedule</th>*@
+                    <th scope="col">VM Status</th>
+                </tr>
+                <tr>
+                    <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search resource group" /></th>
+                    <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search server name" /></th>
+                    @*<th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search cost" /></th>
+                    <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search savings" /></th>
+                    <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search schedule" /></th>*@
+                    <th style="padding-left: 4px"><input type="text" class="form-control" placeholder="Search status" /></th>
+                </tr>
+            </thead>
+            <tbody id="table_body"></tbody>
+        </table>
+    </div>
+
+    <!-- VM Stop Modal -->
+    <div class="modal fade" id="vmModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header alert-warning">
+                    <i class="fa fa-exclamation-triangle fa-2x" style="margin-right: 5px"></i><h4 class="modal-title" id="vmModalTitle"></h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <!-- Modal body -->
+                <div class="modal-body" id="vmModalBody">
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <button class="btn btn-warning" id="stopVmButton">Stop VM</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Disable Modal -->
+    @* <div class="modal fade" id="disableModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header alert-warning">
+                        <i class="fa fa-exclamation-triangle fa-2x" style="margin-right: 5px"></i><h4 class="modal-title" id="disableModalTitle"></h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+
+                    <!-- Modal body -->
+                    <div class="modal-body" id="disableModalBody">
+                    </div>
+
+                    <!-- Modal footer -->
+                    <div class="modal-footer">
+                        <button class="btn btn-warning" id="disableSchedule">Disable Schedule</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div> *@
+
+    <link rel="prefetch" as="image" href="images/started.png" />
+    <link rel="prefetch" as="image" href="images/stopped.png" />
+}
+
+
+@if (Model.Subscriptions.Any()) {
+@section Scripts {
+    <script>
+        var currentAjaxRequests = {}
+
+        $(window).on('load',
+            (function() {
+                $('#loadingDiv').addClass('loading');
+                var subscriptionId = $('#subscriptionDropdown').val();
+
+                var datatable = $('#vmTable').DataTable({
+                    paging: false,
+                    scrollY: '56vh',
+                    scrollCollapse: true,
+                    //force sort icons to top header row
+                    bSortCellsTop: true,
+                    //add extract buttons
+                    dom: 'Bfrtip',
+                    buttons: [
+                        {
+                            extend: 'copy',
+                            exportOptions: {
+                                rows: ':visible'
+                            },
+                            className: 'btn btn-info',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            }
+                        },
+                        {
+                            extend: 'excel',
+                            exportOptions: {
+                                rows: ':visible'
+                            },
+                            className: 'btn btn-info',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            }
+                        },
+                        {
+                            text: 'Clear Filters',
+                            className: 'btn btn-danger',
+                            init: function(api, node, config) {
+                                $(node).removeClass('dt-button');
+                            },
+                            action: function(e) {
+                                e.preventDefault();
+                                $('table thead tr input').each(function() { $(this).val("") });
+                                datatable.search('').columns().search('').draw();
+                            }
+                        }
+                    ],
+                    ajax: {
+                        url: "/?handler=Vms&subscriptionId=" + subscriptionId
+                    },
+                    columns: [
+                        { data: 'ResourceGroup' },
+                        { data: 'Name' },
+                        //{
+                        //    data: 'WeeklyCost',
+                        //    render: function(data, type, row) {
+                        //        return toCurrency(data);
+                        //    }
+                        //},
+                        //{
+                        //    data: 'WeeklySavingsPercent',
+                        //    render: function(data, type, row) {
+                        //        return toPercent(data);
+                        //    }
+                        //},
+                        //{
+                        //    data: 'Schedule',
+                        //    render: function(data, type, row) {
+                        //        return getWeeklyScheduleHtml(data.Days,
+                        //            data.StartTime,
+                        //            data.StopTime);
+                        //    }
+                        //},
+                        {
+                            data: 'Status',
+                            render: function(data, type, row) {
+                                if (!data) {
+                                    return getVmStatusHtml("Updating");
+                                } else {
+                                    return data;
+                                }
+                            }
+                        }
+                    ],
+                    order: [[0, 'asc'], [1, 'asc']],
+                    drawCallback: function(settings) {
+                        $('#loadingDiv').removeClass('loading');
+                    },
+                    initComplete: function(settings, json) {
+                        updateAllVmStatus();
+
+                        //enable searching listeners
+                        datatable.columns().eq(0).each(function(colIdx) {
+                            $('input',
+                                $(datatable.column(0).header().closest('tr')).closest('thead').find('tr').eq(1)
+                                .find('th')[colIdx]).on(
+                                'keyup change',
+                                function() {
+                                    datatable.column(colIdx).search(this.value).draw();
+                                });
+                        });
+                    }
+                });
+            }));
+
+        var subscriptionDropdownChanged = function(dropdown) {
+            $('#loadingDiv').addClass('loading');
+            var keys = Object.keys(currentAjaxRequests);
+            keys.forEach((key) => {
+                currentAjaxRequests[key].abort();
+            });
+
+            currentAjaxRequests = {}
+            $('#vmTable').DataTable().ajax.url("/?handler=Vms&subscriptionId=" + dropdown.value)
+                .load(updateAllVmStatus);
+        }
+
+        var toggleButtonClicked = function(button) {
+            $('[data-toggle="tooltip"]').tooltip("hide");
+
+            var row = $(button).closest('tr');
+            var vm = vmDetailsJson(row);
+
+            //popup warning if turning off vm
+            if ($(button).hasClass('btn-started')) {
+                $('#vmModalTitle').html('Warning!');
+                $('#vmModalBody').html('Are you sure you want to stop ' + vm.Name + '?');
+                $('#stopVmButton').off('click');
+                $('#stopVmButton').on("click", { row: row }, stopVm);
+                $('#vmModal').modal('show');
+            } else if ($(button).hasClass('btn-stopped')) {
+                startVm(row);
+            }
+        }
+
+        var vmDetailsJson = function(row) {
+            var data = $('#vmTable').DataTable().row(row).data();
+            return {
+                SubscriptionId: $('#subscriptionDropdown').val(),
+                Subscription: $('#subscriptionDropdown option:selected').text(),
+                ResourceGroup: data.ResourceGroup,
+                Name: data.Name
+            }
+        }
+
+        var updateAllVmStatus = function() {
+            $('#vmTable').DataTable().rows().every(function(rowIdx, tableLoop, rowLoop) {
+                updateVmStatus(this, rowIdx);
+            });
+        }
+
+        var updateVmStatus = function(row, rowIdx) {
+            var ajax = $.getJSON("/?handler=Status", vmDetailsJson(row))
+                .done(function(status) {
+                    updateStatusHtml(row, status);
+                    if (!["PowerState/running", "PowerState/deallocated", "PowerState/stopped", "Unknown"]
+                        .includes(status)) {
+                        setTimeout(function() { updateVmStatus(row); }, 5000);
+                    }
+                    delete currentAjaxRequests[rowIdx];
+                })
+                .fail(function(jqxhr, textStatus, error) {
+                    var err = textStatus + ", " + error;
+                    console.log("Request Failed: " + err);
+                    console.log(jqxhr);
+                });
+
+            currentAjaxRequests[rowIdx] = ajax;
+        }
+
+        var updateStatusHtml = function(row, status) {
+            var data = $('#vmTable').DataTable().row(row).data();
+            data.Status = getVmStatusHtml(status);
+            $('#vmTable').DataTable().row(row).data(data).invalidate();
+            $('[data-toggle="tooltip"]').tooltip({ trigger: 'hover' });
+        }
+
+        var refreshStatus = function(button) {
+            $('[data-toggle="tooltip"]').tooltip("hide");
+            var row = $(button).closest('tr');
+            updateStatusHtml(row, "Updating");
+            updateVmStatus(row);
+        }
+
+        var startVm = function(row) {
+            var data = $('#vmTable').DataTable().row(row).data();
+            data.Status = getVmStatusHtml("PowerState/starting");
+            $('#vmTable').DataTable().row(row).data(data).invalidate();
+
+            $.getJSON("/?handler=StartVm", vmDetailsJson(row))
+                .done(function() {
+                    setTimeout(function() { updateVmStatus(row); }, 5000);
+                })
+                .fail(function(jqxhr, textStatus, error) {
+                    var err = textStatus + ", " + error;
+                    console.log("Request Failed: " + err);
+                    console.log(jqxhr);
+                });
+        };
+
+        var stopVm = function(event) {
+            $('#vmModal').modal('hide');
+
+            var row = event.data.row;
+            var data = $('#vmTable').DataTable().row(row).data();
+            data.Status = getVmStatusHtml("PowerState/deallocating");
+            $('#vmTable').DataTable().row(row).data(data).invalidate();
+
+            $.getJSON("/?handler=StopVm", vmDetailsJson(row))
+                .done(function() {
+                    setTimeout(function() { updateVmStatus(row); }, 5000);
+                })
+                .fail(function(jqxhr, textStatus, error) {
+                    var err = textStatus + ", " + error;
+                    console.log("Request Failed: " + err);
+                    console.log(jqxhr);
+                });
+        }
+
+        var getWeeklyScheduleHtml = function(scheduledDays, scheduledStartTime, scheduledStopTime) {
+            var html = '';
+            if (scheduledDays) {
+                html += 'Days: <b>' + scheduledDays + '</b><br/>';
+
+                if (scheduledStartTime) {
+                    html += 'Start Time (CST): <b>' + scheduledStartTime + '</b><br/>';
+                }
+
+                if (scheduledStopTime) {
+                    html += 'Stop Time (CST): <b>' + scheduledStopTime + '</b><b/>';
+                }
+            }
+            return html;
+        }
+
+        var getVmStatusHtml = function(status) {
+            var html = '';
+
+            switch (status) {
+            case "PowerState/running":
+                html += '<span data-toggle="tooltip" data-placement="left" title="Click to stop.">' +
+                    '<button class="btn btn-success btn-started" onclick="toggleButtonClicked(this)">Running</button></span>';
+                break;
+            case "PowerState/deallocated":
+                html += '<span data-toggle="tooltip" data-placement="left" title="Click to start.">' +
+                    '<button class="btn btn-danger btn-stopped" onclick="toggleButtonClicked(this)">Deallocated</button></span>';
+                break;
+            case "PowerState/stopped":
+                html += '<span data-toggle="tooltip" data-placement="left" title="Click to start.">' +
+                    '<button class="btn btn-danger btn-stopped" onclick="toggleButtonClicked(this)">Stopped</button></span>';
+                break;
+            case "PowerState/starting":
+                //html += '<button class="btn btn-success" disabled>' +
+                //    '<i class="fa fa-circle-o-notch fa-spin"></i>Starting...</button>';
+                html += '<button class="btn btn-danger" disabled><i class="fas fa-spin fa-sync"></i>' +
+                    '&nbsp;&nbsp;Starting...</button>';
+                break;
+            case "PowerState/deallocating":
+                //html += '<button class="btn btn-danger" disabled>' +
+                //    '<i class="fa fa-circle-o-notch fa-spin"></i>Deallocating...</button>';
+                html += '<button class="btn btn-danger" disabled><i class="fas fa-spin fa-sync"></i>' +
+                    '&nbsp;&nbsp;Deallocating...</button>';
+                break;
+            case "PowerState/stopping":
+                html += '<button class="btn btn-danger" disabled>' +
+                    '<i class="fa fa-circle-o-notch fa-spin"></i>Stopping...</button>';
+                break;
+            case "Unknown":
+                html += '<button class="btn btn-warning" disabled>' +
+                    '<i class="fa fa-exclamation-circle"></i>Unknown</button>';
+                break;
+            case "Updating":
+                html += '<button class="btn btn-info" disabled><i class="fas fa-spin fa-sync"></i>' +
+                    '&nbsp;&nbsp;Getting status...</button>';
+                return html;
+            default:
+                html += '<button class="btn btn-warning" disabled>' +
+                    '<i class="fa fa-exclamation-circle"></i>' +
+                    status +
+                    '</button>';
+                break;
+            }
+
+            return html + getVmRefreshHtml();
+        }
+
+        var getVmRefreshHtml = function() {
+            var html = '' +
+                '<span data-toggle="tooltip" data-placement="right" title="Refresh status">' +
+                '<button class="btn btn-info refresh" style="margin-left: 1%" onclick="refreshStatus(this)">' +
+                '<i class="fas fa-sync"></i></button></span>';
+            return html;
+        }
+
+        var toCurrency = function(number) {
+            return number == null ? null : "$" + parseFloat(number).toFixed(2);
+        };
+
+        var toPercent = function(number) {
+            return number == null ? "0%" : parseFloat(number).toFixed(2) + "%";
+        };
+    </script>
+}
+}

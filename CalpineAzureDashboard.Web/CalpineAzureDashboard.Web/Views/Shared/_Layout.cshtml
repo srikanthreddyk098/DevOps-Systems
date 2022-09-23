@@ -1,0 +1,112 @@
+﻿@using System.Configuration
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewBag.Title - Calpine Azure Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Fonts -->
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:300,400' rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Lato:300,400,700,900' rel="stylesheet" type="text/css">
+    @Styles.Render("~/portalBundle")
+</head>
+<body class="flat-blue">
+<div class="app-container">
+    <div class="row content-container">
+        <nav class="navbar navbar-default navbar-fixed-top navbar-top">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-expand-toggle">
+                        <i class="icon fa fa-bars"></i>
+                    </button>
+                    @RenderSection("Breadcrumbs", false)
+                    <button type="button" class="navbar-right-expand-toggle pull-right visible-xs">
+                        <i class="fa fa-th icon"></i>
+                    </button>
+                </div>
+                @Html.Partial("_LoginPartial")
+            </div>
+        </nav>
+        <div class="side-menu sidebar-inverse">
+            <nav class="navbar navbar-default" role="navigation">
+                <div class="side-menu-container">
+                    <div class="navbar-header">
+                        <a class="navbar-brand" href="@Url.RouteUrl("")">
+                            <div class="icon pull-left">
+                                <img src="~/img/logo.svg" id="logo" class="img-responsive" style="margin: 7px 10px; height: 30px; width: auto;" />
+                            </div>
+                            <div class="title" style="margin-top: 2px">Azure Dashboard</div>
+                        </a>
+                        <button type="button" class="navbar-expand-toggle pull-right visible-xs">
+                            <i class="fa fa-times icon"></i>
+                        </button>
+                    </div>
+                    <ul class="nav navbar-nav">
+                        @{
+                            string homeReportId = ConfigurationManager.AppSettings["powerbi:HomeReportId"];
+                            string reportId = Request.QueryString["reportId"];
+                            string className = "";
+                            if (!string.IsNullOrEmpty(reportId)) {
+                                className = reportId.Equals(homeReportId) ? "active" : "";
+                            }
+                        }
+                        <li class="@className">
+                            <a href="@Url.RouteUrl("dashboard")" style="font-size: 1.1em">
+                                <span class="icon fa fa-home"></span><span class="title">Home</span>
+                            </a>
+                        </li>
+                        @Html.Action("Reports", "Dashboard", new { area = "" })
+                    </ul>
+                </div>
+                <!-- /.navbar-collapse -->
+            </nav>
+        </div>
+        <!-- Main Content -->
+        <div>
+            <div class="side-body">
+                <div id="message-container">
+                    @if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+                    {
+                        <div class="col-xs-12" style="padding-left: 0">
+                            <div class="alert alert-success">
+                                @ViewBag.SuccessMessage
+                            </div>
+                        </div>
+                    }
+                    else if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="col-xs-12" style="padding-left: 0">
+                            <div class="alert alert-success">
+                                @TempData["SuccessMessage"].ToString()
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+                    {
+                        <div class="col-xs-12" style="padding-left: 0">
+                            <div class="alert alert-danger">
+                                @ViewBag.ErrorMessage
+                            </div>
+                        </div>
+                    }
+                    else if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="col-xs-12" style="padding-left: 0">
+                            <div class="alert alert-danger">
+                                @TempData["ErrorMessage"].ToString()
+                            </div>
+                        </div>
+                    }
+                </div>
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+</div>
+
+    @Scripts.Render("~/portalScriptBundle")
+    @RenderSection("Scripts", false)
+    <script>
+        $('#message-container').delay(4000).fadeOut(1000);
+    </script>
+</body>
+</html>

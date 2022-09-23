@@ -1,0 +1,65 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"nicName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the network interface to update."
+            }
+        },
+        "enableAcceleratedNetworking": {
+            "type": "string",
+            "defaultValue": "false",
+            "allowedValues": [
+                "true",
+                "false"
+            ]
+        },
+        "privateIpAllocationMethod": {
+            "type": "string",
+            "allowedValues": [
+                "Static",
+                "Dynamic"
+            ],
+            "metadata": {
+                "description": "The allocation method to assign to the private ip."
+            }
+        },
+		"privateIpAddress": {
+            "type": "string",
+            "metadata": {
+                "description": "The private ip address to assign."
+            }
+        },
+		"subnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "The subnet id of the network interface to update."
+            }
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-07-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[parameters('nicName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "enableAcceleratedNetworking": "[bool(parameters('enableAcceleratedNetworking'))]",
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "[parameters('privateIpAllocationMethod')]",
+                            "privateIPAddress": "[parameters('privateIpAddress')]",
+                            "subnet": {
+                                "id": "[parameters('subnetId')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

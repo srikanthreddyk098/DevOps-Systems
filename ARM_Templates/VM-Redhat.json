@@ -1,0 +1,256 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"vmName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the virtual machine to create."
+            }
+        },
+        "vmSize": {
+          "type": "string",
+          "metadata": {
+            "description": "Sku size of the VM."
+          }
+        },
+        "timezone": {
+            "type": "string",
+            "metadata": {
+                "description": "The timezone to set the VM to."
+            }
+        },
+        "imagePublisher": {
+          "type": "string",
+          "metadata": {
+            "description": "The publisher for the OS image."
+          }
+        },
+        "imageOffer": {
+          "type": "string",
+          "metadata": {
+            "description": "The offer for the OS image."
+          }
+        },
+        "imageSku": {
+          "type": "string",
+          "metadata": {
+            "description": "The sku for the OS image."
+          }
+        },
+        "osDiskSizeInGb": {
+          "type": "string",
+            "metadata": {
+                "description": "Size of the OS disk in GB."
+            }
+        },
+        "storageAccountType": {
+            "type": "string",
+            "metadata": {
+                "description": "OS disk storage account type."
+            }
+        },
+        "localAdminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Local admin username."
+            }
+        },
+        "localAdminPassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Local admin password."
+            }
+        },
+        "tagApplicationName": {
+            "type": "string",
+            "metadata": {
+                "description": "Tag value for required tag Application_Name"
+            }
+        },
+        "tagApplicationOwner": {
+            "type": "string",
+            "metadata": {
+                "description": "The value for the the Application_Owner tag."
+            }
+        },
+        "tagServerType": {
+            "type": "string",
+            "metadata": {
+                "description": "Tag value for required tag Server_Type"
+            }
+        },
+        "tagSnowRequest": {
+            "type": "string",
+            "metadata": {
+                "description": "The value to assign to the SNOW_Request tag."
+            }
+        },
+        "virtualNetworkResourceGroup": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the resource group containing the virtual network."
+            }
+        },
+        "virtualNetworkName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the virtual network to deploy to."
+            }
+        },
+        "subnetName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the subnet within the specified virtual network to deploy to."
+            }
+        },
+        "enableAcceleratedNetworking": {
+            "type": "string",
+            "defaultValue": "false",
+            "allowedValues": [
+                "true",
+                "false"
+            ]
+        },
+        "privateIpAllocationMethod": {
+            "type": "string",
+            "defaultValue": "Static",
+            "allowedValues": [
+                "Static",
+                "Dynamic"
+            ],
+            "metadata": {
+                "description": "Specifies whether the private IP should be dynamic or static."
+            }
+        },
+        "useTestTemplates": {
+            "type": "string",
+            "defaultValue": "No",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Yes/No value to determine whether or not to use the test templates or the 'production' templates."
+            }
+        }
+    },
+    "variables": {
+        "nicName": "[concat(parameters('vmName'),'-nic1')]",
+        "vnetId": "[resourceId(parameters('virtualNetworkResourceGroup'),'Microsoft.Network/virtualNetworks',parameters('virtualNetworkName'))]",
+        "subnetId": "[concat(variables('vnetId'),'/subnets/',parameters('subnetName'))]",
+        "armTemplatesBaseUrl": "[if(equals(parameters('useTestTemplates'),'Yes'),'https://cpndeploy.blob.core.windows.net/arm-templates/test','https://cpndeploy.blob.core.windows.net/arm-templates/')]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-07-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[variables('nicName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "Application_Name": "[parameters('tagApplicationName')]",
+                "Application_Owner": "[parameters('tagApplicationOwner')]",
+                "SNOW_Request": "[parameters('tagSnowRequest')]"
+            },
+            "properties": {
+                "enableAcceleratedNetworking": "[bool(parameters('enableAcceleratedNetworking'))]",
+                "ipConfigurations": [{
+                    "name": "ipconfig1",
+                    "properties": {
+                        "privateIPAllocationMethod": "Dynamic",
+                        "subnet": {
+                            "id":  "[variables('subnetId')]"
+                        }
+                    }
+                }]
+            }
+        },
+        {
+            "apiVersion": "2018-05-01",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[equals(parameters('privateIpAllocationMethod'),'Static')]",
+            "name": "[concat(variables('nicName'),'-updatePrivateIpAllocationMethod')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/',variables('nicName'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('armTemplatesBaseUrl'),'NIC-UpdatePrivateIpConfiguration.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "nicName": {
+                        "value": "[variables('nicName')]"
+                    },
+                    "enableAcceleratedNetworking": {
+                        "value": "[parameters('enableAcceleratedNetworking')]"
+                    },
+                    "privateIpAllocationMethod": {
+                        "value": "[parameters('privateIpAllocationMethod')]"
+                    },
+                    "privateIpAddress": {
+                        "value": "[reference(concat('Microsoft.Network/networkInterfaces/',variables('nicName'))).ipConfigurations[0].properties.privateIPAddress]"
+                    },
+                    "subnetId": {
+                        "value": "[variables('subnetId')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[parameters('vmName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+            ],
+            "tags": {
+                "Application_Name": "[parameters('tagApplicationName')]",
+                "Application_Owner": "[parameters('tagApplicationOwner')]",
+                "Server_Type": "[parameters('tagServerType')]",
+                "SNOW_Request": "[parameters('tagSnowRequest')]"
+            },
+            "plan": {
+                "name": "[toLower(parameters('imageSku'))]",
+                "publisher": "redhat",
+                "product": "rhel-byos"
+            },
+            "properties": {
+                "osProfile": {
+                    "computerName": "[parameters('vmName')]",
+                    "adminUsername": "[parameters('localAdminUsername')]",
+                    "adminPassword": "[parameters('localAdminPassword')]"
+                },
+                "hardwareProfile": {
+                    "vmSize": "[parameters('VmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[parameters('imagePublisher')]",
+                        "offer": "[parameters('imageOffer')]",
+                        "sku": "[parameters('imageSku')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[concat(parameters('vmName'),'-osDisk')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('storageAccountType')]"
+                        },
+                        "diskSizeGB": "[parameters('osDiskSizeInGb')]"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+select#daysDropdown {
+    display: none
+}
+
+.btn-white {
+    background-color: white;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+}
+
+.btn-white:active {
+    border: 1px solid #ced4da;
+}
