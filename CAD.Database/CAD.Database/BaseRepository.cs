@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 
@@ -16,7 +16,7 @@ namespace CAD.Database
         {
             _conn = conn;
             _tableName = tableName;
-            _defaultCommandTimeout = defaultCommandTimeout;123_123
+            _defaultCommandTimeout = defaultCommandTimeout;
         }
 
         public virtual async Task<int> ExecuteAsync(string query, object whereObject = null, int? commandTimeout = null)
