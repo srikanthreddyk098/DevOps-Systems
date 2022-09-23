@@ -16,7 +16,7 @@ namespace CAD.Database
         {
             _conn = conn;
             _tableName = tableName;
-            _defaultCommandTimeout = defaultCommandTimeout;
+            _defaultCommandTimeout = defaultCommandTimeout;123
         }
 
         public virtual async Task<int> ExecuteAsync(string query, object whereObject = null, int? commandTimeout = null)
